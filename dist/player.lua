@@ -22,14 +22,21 @@ function Player.new(x, y)
   return self
 end
 
+speed = math.pi * 0.5
 function Player.update(self, dt)
   local x, y = self.body:getLinearVelocity()
   local planetX, planetY = self.planet.body:getPosition()
   local playerX, playerY = self.body:getPosition()
   local px, py = vector.normalize(planetX - playerX, planetY - playerY)
   local length, angle = vector.polar(px, py)
+	
+local angle2 = angle + math.pi * 0.5
 
-  self.body:setAngle(angle + math.pi * 0.5)
+if (angle - self.body:getAngle()) > (speed * dt) then
+	self.body:setAngle(self.body:getAngle() + speed * dt)
+else
+  self.body:setAngle(angle2)
+end
 
   if love.keyboard.isDown("left") then
     local tx, ty = vector.cartesian(length, angle + math.pi * 0.5)
