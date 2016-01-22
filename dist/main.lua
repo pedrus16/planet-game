@@ -1,6 +1,6 @@
 require "player"
 require "planet"
-vector = require "lib/vector"
+-- vector = require "lib/vector"
 
 function colorLight()
   return 252, 245, 184
@@ -27,9 +27,9 @@ function love.load()
   scale = 1;
 
   planet1 = Planet.new(0, 0, 500, 300)
-  planet2 = Planet.new(0, -1000, 100, 300)
+  planet2 = Planet.new(0, -10000, 200, 200)
 
-  player = Player.new(0, -620)
+  player = Player.new(0, -530)
   player.planet = planet1
   table.insert(planet1.objects, player)
   table.insert(planet2.objects, player)
@@ -61,7 +61,6 @@ function love.draw()
   love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10)
 end
 
-
 function love.update(dt)
   world:update(dt)
   planet1:update(dt)
@@ -74,7 +73,7 @@ function love.keypressed(key, scancode, isrepeat)
   local playerX, playerY = player.body:getPosition()
   local px, py = vector.normalize(planetX - playerX, planetY - playerY)
   if key == "space" then
-    player.body:applyLinearImpulse(-px * 150, -py * 150)
+    player.body:applyLinearImpulse(-px * 70, -py * 70)
   end
   if key == 'up' and scale <= 16 then
     scale = scale * 2

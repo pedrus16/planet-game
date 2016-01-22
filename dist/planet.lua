@@ -8,8 +8,8 @@ function Planet.new(x, y, radius, gravity)
 
   self.gravity = gravity or 9.81;
   self.body = love.physics.newBody(world, x, y)
-  self.shape = love.physics.newCircleShape(radius)
-  self.fixture = love.physics.newFixture(self.body, self.shape)
+  self.fixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius), 1)
+  self.shape = self.fixture:getShape()
   self.objects = {}
 
   return self
@@ -36,7 +36,7 @@ function Planet.draw(self)
   love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.shape:getRadius())
   love.graphics.setColor(colorDarkGreen());
   love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius())
-  love.graphics.line(self.body:getX(), self.body:getY(), self.body:getX() + self.shape:getRadius(), self.body:getY())
+  love.graphics.line(self.body:getX(), self.body:getY(), self.body:getX(), self.body:getY() - self.shape:getRadius())
 
   local px, py = self.body:getPosition()
   for key, object in pairs(self.objects) do
@@ -47,6 +47,6 @@ function Planet.draw(self)
     gx, gy = vector.normalize(px - ox, py - oy)
     local force = self.gravity / (distance / self.shape:getRadius())
     love.graphics.setColor(colorLight())
-    -- love.graphics.line(object.body:getX(), object.body:getY(), object.body:getX() + gx * force, object.body:getY() + gy * force)
+    love.graphics.line(object.body:getX(), object.body:getY(), object.body:getX() + gx * force, object.body:getY() + gy * force)
   end
 end

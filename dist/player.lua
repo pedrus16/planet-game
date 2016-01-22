@@ -1,5 +1,3 @@
-vector = require "lib/vector"
-
 Player = {}
 Player.__index = Player
 
@@ -22,35 +20,27 @@ function Player.new(x, y)
   return self
 end
 
-speed = math.pi * 0.5
 function Player.update(self, dt)
   local x, y = self.body:getLinearVelocity()
   local planetX, planetY = self.planet.body:getPosition()
   local playerX, playerY = self.body:getPosition()
   local px, py = vector.normalize(planetX - playerX, planetY - playerY)
   local length, angle = vector.polar(px, py)
-	
-local angle2 = angle + math.pi * 0.5
 
-if (angle - self.body:getAngle()) > (speed * dt) then
-	self.body:setAngle(self.body:getAngle() + speed * dt)
-else
-  self.body:setAngle(angle2)
-end
-
+  self.body:setAngle(angle + math.pi * 0.5)
   if love.keyboard.isDown("left") then
     local tx, ty = vector.cartesian(length, angle + math.pi * 0.5)
-    self.body:setLinearVelocity(x + tx * 8, y + ty * 8)
+    self.body:setLinearVelocity(tx * 100, ty * 100)
   end
 
   if love.keyboard.isDown("right") then
     local tx, ty = vector.cartesian(length, angle - math.pi * 0.5)
-    self.body:setLinearVelocity(x + tx * 8, y + ty * 8)
+    self.body:setLinearVelocity(tx * 100, ty * 100)
   end
 end
 
 function Player.draw(self)
-  love.graphics.points(self.body:getPosition())
+  -- love.graphics.points(self.body:getPosition())
   love.graphics.setColor(255, 0, 0, 255)
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
   love.graphics.setColor(255, 255, 255, 255)
