@@ -56,3 +56,19 @@ end
 function Player.setPlanet(self, planet)
   self.planet = planet
 end
+
+function Player.beginContact(self)
+
+end
+
+function Player.endContact(self)
+
+end
+
+function Player.preSolve(self)
+
+end
+
+function Player.postSolve(self)
+
+end

@@ -19,18 +19,13 @@ function colorDark()
 end
 
 function love.load()
-  love.graphics.setLineWidth(1)
   love.graphics.setLineStyle("rough")
-  love.physics.setMeter(27)
   world = love.physics.newWorld(0, 0, true)
-  world:setCallbacks(beginContact, endContact)
+  world:setCallbacks(beginContact, endContact, preSolve, postSolve)
   scale = 1;
-
   planet1 = Planet.new(0, 0, 500, 300)
   planet2 = Planet.new(0, -10000, 200, 200)
-
   player = Player.new(0, -530)
-  player.planet = planet1
   table.insert(planet1.objects, player)
   table.insert(planet2.objects, player)
 end
@@ -81,4 +76,21 @@ function love.keypressed(key, scancode, isrepeat)
   if key == 'down' and scale >= 0 then
     scale = scale * 0.5
   end
+end
+
+
+function beginContact(a, b, coll)
+  player:beginContact(a, b, coll)
+end
+
+function endContact(a, b, coll)
+  player:endContact(a, b, coll)
+end
+
+function preSolve(a, b, coll)
+  player:preSolve(a, b, coll)
+end
+
+function postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
+  player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
 end
