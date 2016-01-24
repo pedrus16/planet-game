@@ -64,12 +64,7 @@ function love.update(dt)
 end
 
 function love.keypressed(key, scancode, isrepeat)
-  local planetX, planetY = player.planet.body:getPosition()
-  local playerX, playerY = player.body:getPosition()
-  local px, py = vector.normalize(planetX - playerX, planetY - playerY)
-  if key == "space" then
-    player.body:applyLinearImpulse(-px * 70, -py * 70)
-  end
+  player:keypressed(key, scancode, isrepeat)
   if key == 'up' and scale <= 16 then
     scale = scale * 2
   end
@@ -77,7 +72,6 @@ function love.keypressed(key, scancode, isrepeat)
     scale = scale * 0.5
   end
 end
-
 
 function beginContact(a, b, coll)
   player:beginContact(a, b, coll)
