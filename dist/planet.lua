@@ -10,7 +10,18 @@ function Planet.new(x, y, radius, gravity)
   self.body = love.physics.newBody(world, x, y)
   self.fixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius), 1)
   self.shape = self.fixture:getShape()
+  self.spritesheet = love.graphics.newImage("level.png")
+  self.spritesheet:setFilter("nearest")
+  self.sprite = love.graphics.newQuad(18, 2, 16, 16, self.spritesheet:getDimensions())
+  self.sprite2 = love.graphics.newQuad(18, 19, 16, 16, self.spritesheet:getDimensions())
+  self.batch = love.graphics.newSpriteBatch(self.spritesheet)
   self.objects = {}
+
+  local segments = math.ceil(self.shape:getRadius() * 2 * math.pi / 16)
+  for i = 0, segments,1 do
+    self.batch:add(self.sprite, 0, 0, math.rad(i * (360 / segments)), 1, 1, 8, self.shape:getRadius())
+  end
+  self.batch:flush()
 
   return self
 end
@@ -32,11 +43,9 @@ function Planet.update(self, dt)
 end
 
 function Planet.draw(self)
-  love.graphics.setColor(colorDark());
+  love.graphics.setColor(colorLight());
   love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.shape:getRadius())
-  love.graphics.setColor(colorDarkGreen());
-  love.graphics.circle("line", self.body:getX(), self.body:getY(), self.shape:getRadius())
-  love.graphics.line(self.body:getX(), self.body:getY(), self.body:getX(), self.body:getY() - self.shape:getRadius())
+  love.graphics.draw(self.batch, self.body:getX(), self.body:getY())
 
   local px, py = self.body:getPosition()
   for key, object in pairs(self.objects) do
