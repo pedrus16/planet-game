@@ -6,24 +6,34 @@ function Player.new(x, y)
 
   self.x = x
   self.y = y
-  self.width = 15
-  self.height = 23
+  self.width = 14
+  self.height = 20
   self.body = love.physics.newBody(world, x, y, "dynamic")
   self.body:setFixedRotation(true)
   self.fixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, 0, self.width, self.height), 1)
   self.shape = self.fixture:getShape()
-  self.spritesheet = love.graphics.newImage("mario.png")
-  self.spritesheet:setFilter("nearest")
-  self.sprite = love.graphics.newQuad(0, 122, 15, 23, self.spritesheet:getDimensions())
   self.angle = self.body:getAngle()
   self.planet = {}
   self.direction = 1
-
   self.isAirbourn = true
+
+  self.spritesheet = love.graphics.newImage("mario.png")
+  self.spritesheet:setFilter("nearest")
+  self.anim = {
+    stand = love.graphics.newQuad(0, 120, 30, 40, self.spritesheet:getDimensions()),
+    run = {
+      love.graphics.newQuad(30, 120, 30, 40, self.spritesheet:getDimensions()),
+      love.graphics.newQuad(60, 120, 30, 40, self.spritesheet:getDimensions()),
+      love.graphics.newQuad(90, 120, 30, 40, self.spritesheet:getDimensions())
+    },
+    jump = love.graphics.newQuad(120, 120, 30, 40, self.spritesheet:getDimensions())
+  }
+  self.playAnim = self.anim.stand
 
   return self
 end
 
+currentFrame = 0
 function Player.update(self, dt)
   local x, y = self.body:getLinearVelocity()
   local planetX, planetY = self.planet.body:getPosition()
@@ -31,18 +41,35 @@ function Player.update(self, dt)
   local px, py = vector.normalize(planetX - playerX, planetY - playerY)
   local length, angle = vector.polar(px, py)
 
+  local l = vector.polar(self.body:getLinearVelocity()) / 10
+
   self.body:setAngle(angle + math.pi * 0.5)
+  self.playAnim = self.anim.stand
   if not self.isAirbourn and love.keyboard.isDown("left") then
     local tx, ty = vector.cartesian(length, angle + math.pi * 0.5)
     self.body:setLinearVelocity(tx * 100, ty * 100)
     self.direction = 1
+    currentFrame = currentFrame + dt
+    self.playAnim = self.anim.run[math.floor((currentFrame * l) % 3) + 1]
   end
 
   if not self.isAirbourn and love.keyboard.isDown("right") then
     local tx, ty = vector.cartesian(length, angle - math.pi * 0.5)
     self.body:setLinearVelocity(tx * 100, ty * 100)
     self.direction = -1
+    currentFrame = currentFrame + dt
+    self.playAnim = self.anim.run[math.floor((currentFrame * l) % 3) + 1]
   end
+
+  if self.isAirbourn then
+    self.playAnim = self.anim.jump
+  end
+
+end
+
+runSpeed = 1
+function Player:requestFrame(dt)
+  return self
 end
 
 function Player.draw(self)
@@ -55,7 +82,9 @@ function Player.draw(self)
   love.graphics.push()
   love.graphics.rotate(self.body:getAngle() + math.pi)
   love.graphics.scale(self.direction, 1)
-  love.graphics.draw(self.spritesheet, self.sprite, self.width * -0.5, self.height * -0.5)
+
+  love.graphics.draw(self.spritesheet, self.playAnim, 30 * -0.5, 40 * -0.5)
+
   love.graphics.pop()
   love.graphics.pop()
 end
@@ -76,21 +105,13 @@ end
 
 function Player.beginContact(self, a, b, coll)
   if (a == self.fixture) then
-    print('a player begin contact')
     self.isAirbourn = false
-  end
-  if (b == self.fixture) then
-    print('b player begin contact')
   end
 end
 
 function Player.endContact(self, a, b, coll)
   if (a == self.fixture) then
-    print('a player end contact')
     self.isAirbourn = true
-  end
-  if (b == self.fixture) then
-    print('b player end contact')
   end
 end
 

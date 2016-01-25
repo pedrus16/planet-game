@@ -47,6 +47,6 @@ function Planet.draw(self)
     gx, gy = vector.normalize(px - ox, py - oy)
     local force = self.gravity / (distance / self.shape:getRadius())
     love.graphics.setColor(colorLight())
-    love.graphics.line(object.body:getX(), object.body:getY(), object.body:getX() + gx * force, object.body:getY() + gy * force)
+    -- love.graphics.line(object.body:getX(), object.body:getY(), object.body:getX() + gx * force, object.body:getY() + gy * force)
   end
 end
