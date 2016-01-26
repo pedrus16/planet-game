@@ -1,5 +1,6 @@
 require "player"
 require "planet"
+require "rocket"
 -- vector = require "lib/vector"
 
 function colorLight()
@@ -19,15 +20,36 @@ function colorDark()
 end
 
 function love.load()
-  love.graphics.setLineStyle("rough")
+  -- love.graphics.setLineStyle("rough")
   world = love.physics.newWorld(0, 0, true)
   world:setCallbacks(beginContact, endContact, preSolve, postSolve)
   scale = 1;
-  planet1 = Planet.new(0, 0, 500, 300)
-  planet2 = Planet.new(0, -10000, 200, 200)
-  player = Player.new(0, -530)
+
+  planet1 = Planet.new(0, 0, 800, 300)
+  planet2 = Planet.new(0, -5000, 200, 200)
+  planet3 = Planet.new(-1000, -2000, 200, 300)
+  planet4 = Planet.new(500, -2000, 50, 200)
+
+  player = Player.new(-820, 0)
+  player:setPlanet(planet1)
+
+  rocket1 = Rocket.new(-920, 50)
+  rocket2 = Rocket.new(-920, -50)
+  rocket3 = Rocket.new(-920, 100)
+  rocket4 = Rocket.new(-920, -100)
+  rocket5 = Rocket.new(-920, -150)
+  rocket6 = Rocket.new(-920, 150)
+
   table.insert(planet1.objects, player)
-  table.insert(planet2.objects, player)
+  table.insert(planet1.objects, rocket1)
+  table.insert(planet1.objects, rocket2)
+  table.insert(planet1.objects, rocket3)
+  table.insert(planet1.objects, rocket4)
+  table.insert(planet1.objects, rocket5)
+  table.insert(planet1.objects, rocket6)
+  -- table.insert(planet2.objects, player)
+  -- table.insert(planet3.objects, player)
+  -- table.insert(planet4.objects, player)
 end
 
 height = love.graphics.getHeight()
@@ -46,9 +68,19 @@ function love.draw()
   love.graphics.rotate(-player.body:getAngle() + math.pi)
   love.graphics.translate(-x, -y)
 
-  player:draw()
   planet1:draw()
   planet2:draw()
+  planet3:draw()
+  planet4:draw()
+
+  player:draw()
+
+  rocket1:draw()
+  rocket2:draw()
+  rocket3:draw()
+  rocket4:draw()
+  rocket5:draw()
+  rocket6:draw()
 
   love.graphics.pop()
   love.graphics.pop()
@@ -58,9 +90,20 @@ end
 
 function love.update(dt)
   world:update(dt)
+
   planet1:update(dt)
   planet2:update(dt)
+  planet3:update(dt)
+  planet4:update(dt)
+
   player:update(dt)
+
+  rocket1:update(dt)
+  rocket2:update(dt)
+  rocket3:update(dt)
+  rocket4:update(dt)
+  rocket5:update(dt)
+  rocket6:update(dt)
 end
 
 function love.keypressed(key, scancode, isrepeat)

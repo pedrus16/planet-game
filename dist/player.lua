@@ -11,6 +11,7 @@ function Player.new(x, y)
   self.body = love.physics.newBody(world, x, y, "dynamic")
   self.body:setFixedRotation(true)
   self.fixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, 0, self.width, self.height), 1)
+  self.fixture:setFriction(1)
   self.shape = self.fixture:getShape()
   self.angle = self.body:getAngle()
   self.planet = {}
@@ -50,7 +51,7 @@ function Player.update(self, dt)
     self.body:setLinearVelocity(tx * 100, ty * 100)
     self.direction = 1
     currentFrame = currentFrame + dt
-    self.playAnim = self.anim.run[math.floor((currentFrame * l) % 3) + 1]
+    self.playAnim = self.anim.run[math.floor(currentFrame * l) % 3 + 1]
   end
 
   if not self.isAirbourn and love.keyboard.isDown("right") then
@@ -58,12 +59,16 @@ function Player.update(self, dt)
     self.body:setLinearVelocity(tx * 100, ty * 100)
     self.direction = -1
     currentFrame = currentFrame + dt
-    self.playAnim = self.anim.run[math.floor((currentFrame * l) % 3) + 1]
+    self.playAnim = self.anim.run[math.floor(currentFrame * l) % 3 + 1]
   end
 
   if self.isAirbourn then
     self.playAnim = self.anim.jump
   end
+
+  -- if object.planet ~= self and distance < (self.shape:getRadius() + 100) then
+    -- object:setPlanet(self)
+  -- end
 
 end
 
@@ -74,9 +79,10 @@ end
 
 function Player.draw(self)
   -- love.graphics.points(self.body:getPosition())
-  love.graphics.setColor(255, 0, 0, 255)
+  -- love.graphics.setColor(255, 0, 0, 255)
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
   love.graphics.setColor(255, 255, 255, 255)
+  -- love.graphics.setColor(colorLightGreen());
   love.graphics.push()
   love.graphics.translate(self.body:getPosition())
   love.graphics.push()
@@ -104,19 +110,19 @@ function Player.keypressed(self, key, scancode, isrepeat)
 end
 
 function Player.beginContact(self, a, b, coll)
-  if (a == self.fixture) then
-    self.isAirbourn = false
-  end
 end
 
 function Player.endContact(self, a, b, coll)
-  if (a == self.fixture) then
+  if a == self.fixture or b == self.fixture then
     self.isAirbourn = true
+    print('UNTOUCH')
   end
 end
 
 function Player.preSolve(self, a, b, coll)
-
+  if a == self.fixture or b == self.fixture then
+    self.isAirbourn = false
+  end
 end
 
 function Player.postSolve(self, a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
