@@ -1,17 +1,27 @@
+require "gameObject"
 vector = require "lib/vector"
 
 Planet = {}
 Planet.__index = Planet
 
-function Planet.new(x, y, radius, gravity)
-  local self = setmetatable({}, Planet)
+setmetatable(Planet, {
+  __index = GameObject,
+  __call = function (cls, ...)
+    local self = setmetatable({}, cls)
+    self:_init(...)
+    return self
+  end,
+})
+
+function Planet:_init(x, y, radius, gravity)
+  GameObject:_init()
 
   self.gravity = gravity or 9.81;
   self.body = love.physics.newBody(world, x, y)
   self.fixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius), 1)
   self.fixture:setFriction(1)
   self.shape = self.fixture:getShape()
-  self.spritesheet = love.graphics.newImage("level.png")
+  self.spritesheet = love.graphics.newImage("resources/level.png")
   self.spritesheet:setFilter("nearest")
   self.sprite = love.graphics.newQuad(18, 2, 16, 16, self.spritesheet:getDimensions())
   self.sprite2 = love.graphics.newQuad(18, 19, 16, 16, self.spritesheet:getDimensions())
@@ -33,7 +43,7 @@ end
 function Planet.update(self, dt)
   local px, py = self.body:getPosition()
 
-  for key, object in pairs(self.objects) do
+  for key, object in pairs(objects) do
     local ox, oy = object.body:getPosition()
     local gx, gy = px - ox, py - oy
     local distance = vector.polar(gx, gy)

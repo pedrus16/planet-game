@@ -1,6 +1,7 @@
 require "player"
 require "planet"
 require "rocket"
+require "enet"
 -- vector = require "lib/vector"
 
 function colorLight()
@@ -19,41 +20,104 @@ function colorDark()
   return 64, 63, 63
 end
 
+function generateEntities()
+  objects = {}
+
+  planet1 = Planet(0, 0, 800, 300)
+  player = Player(-820, 0)
+  player.planet = planet1
+
+  table.insert(objects, player)
+  table.insert(objects, planet1)
+  table.insert(objects, Planet(500, -2000, 50, 200))
+  table.insert(objects, Rocket(-920, 50))
+  table.insert(objects, Rocket(-920, -50))
+  table.insert(objects, Rocket(-920, 100))
+  table.insert(objects, Rocket(-920, -100))
+  table.insert(objects, Rocket(-920, -150))
+  table.insert(objects, Rocket(-920, 150))
+end
+
 function love.load()
-  -- love.graphics.setLineStyle("rough")
+  SERVER = false
+  CLIENT = false
   world = love.physics.newWorld(0, 0, true)
   world:setCallbacks(beginContact, endContact, preSolve, postSolve)
-  scale = 1;
+  scale = 1
 
-  planet1 = Planet.new(0, 0, 800, 300)
-  planet2 = Planet.new(0, -5000, 200, 200)
-  planet3 = Planet.new(-1000, -2000, 200, 300)
-  planet4 = Planet.new(500, -2000, 50, 200)
+  generateEntities()
 
-  player = Player.new(-820, 0)
-  player:setPlanet(planet1)
+end
 
-  rocket1 = Rocket.new(-920, 50)
-  rocket2 = Rocket.new(-920, -50)
-  rocket3 = Rocket.new(-920, 100)
-  rocket4 = Rocket.new(-920, -100)
-  rocket5 = Rocket.new(-920, -150)
-  rocket6 = Rocket.new(-920, 150)
+function initServer()
+  SERVER = true
+  host = enet.host_create("localhost:6790")
+  print('INIT SERVER')
+end
 
-  table.insert(planet1.objects, player)
-  table.insert(planet1.objects, rocket1)
-  table.insert(planet1.objects, rocket2)
-  table.insert(planet1.objects, rocket3)
-  table.insert(planet1.objects, rocket4)
-  table.insert(planet1.objects, rocket5)
-  table.insert(planet1.objects, rocket6)
-  -- table.insert(planet2.objects, player)
-  -- table.insert(planet3.objects, player)
-  -- table.insert(planet4.objects, player)
+function initClient()
+  CLIENT = true
+  host = enet.host_create()
+  server = host:connect("localhost:6790")
+  print('INIT CLIENT')
 end
 
 height = love.graphics.getHeight()
 width = love.graphics.getWidth()
+tickRate = 10
+currentTime = 0
+function love.update(dt)
+
+  if SERVER and currentTime > (1 / tickRate) then
+    -- print('server tick')
+    local event = host:service()
+    if event then
+      event.peer:send(event.data)
+      if event.type == "receive" then
+        print("Got message: ", event.data, event.peer)
+        event.peer:send(event.data)
+      end
+    end
+    currentTime = 0
+  end
+  if CLIENT and currentTime > (1 / tickRate) then
+    -- print('client tick')
+    local event = host:service()
+    if event then
+      event.peer:send(currentTime)
+      if event.type == "connect" then
+        print("Connected to", event.peer)
+        event.peer:send("hello world")
+      elseif event.type == "receive" then
+        print("Got message: ", event.data, event.peer)
+        done = true
+      end
+    end
+    currentTime = 0
+  end
+  currentTime = currentTime + dt;
+
+  world:update(dt)
+  for k, object in pairs(objects) do
+    object:update(dt)
+  end
+end
+
+function love.keypressed(key, scancode, isrepeat)
+  player:keypressed(key, scancode, isrepeat)
+  if key == 'up' and scale <= 16 then
+    scale = scale * 2
+  end
+  if key == 'down' and scale >= 0 then
+    scale = scale * 0.5
+  end
+  if key == 's' then
+    initServer()
+  end
+  if key == 'c' then
+    initClient()
+  end
+end
 
 function love.draw()
   local x, y = player.body:getPosition()
@@ -65,55 +129,17 @@ function love.draw()
 
   -- rotate and move to player angle and position
   love.graphics.push()
-  love.graphics.rotate(-player.body:getAngle() + math.pi)
+  love.graphics.rotate(player.body:getAngle())
   love.graphics.translate(-x, -y)
 
-  planet1:draw()
-  planet2:draw()
-  planet3:draw()
-  planet4:draw()
-
-  player:draw()
-
-  rocket1:draw()
-  rocket2:draw()
-  rocket3:draw()
-  rocket4:draw()
-  rocket5:draw()
-  rocket6:draw()
+  for k, object in pairs(objects) do
+    object:draw()
+  end
 
   love.graphics.pop()
   love.graphics.pop()
 
   love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10)
-end
-
-function love.update(dt)
-  world:update(dt)
-
-  planet1:update(dt)
-  planet2:update(dt)
-  planet3:update(dt)
-  planet4:update(dt)
-
-  player:update(dt)
-
-  rocket1:update(dt)
-  rocket2:update(dt)
-  rocket3:update(dt)
-  rocket4:update(dt)
-  rocket5:update(dt)
-  rocket6:update(dt)
-end
-
-function love.keypressed(key, scancode, isrepeat)
-  player:keypressed(key, scancode, isrepeat)
-  if key == 'up' and scale <= 16 then
-    scale = scale * 2
-  end
-  if key == 'down' and scale >= 0 then
-    scale = scale * 0.5
-  end
 end
 
 function beginContact(a, b, coll)

@@ -1,8 +1,19 @@
+require "gameObject"
+
 Rocket = {}
 Rocket.__index = Rocket
 
-function Rocket.new(x, y)
-  local self = setmetatable({}, Rocket)
+setmetatable(Rocket, {
+  __index = GameObject,
+  __call = function (cls, ...)
+    local self = setmetatable({}, cls)
+    self:_init(...)
+    return self
+  end,
+})
+
+function Rocket:_init(x, y)
+  GameObject:_init()
 
   self.width = 28
   self.height = 52
@@ -13,13 +24,13 @@ function Rocket.new(x, y)
   self.fixture:setFriction(1)
   self.shape = self.fixture:getShape()
   self.angle = self.body:getAngle()
-  self.spritesheet = love.graphics.newImage("rocket.png")
+  self.spritesheet = love.graphics.newImage("resources/rocket.png")
   self.spritesheet:setFilter("nearest")
   self.sprite = love.graphics.newQuad(2, 6, 28, 52, self.spritesheet:getDimensions())
 
   return self
 end
-
+ 
 function Rocket.update(self, dt)
 
 end
