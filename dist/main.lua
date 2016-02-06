@@ -44,7 +44,7 @@ end
 function love.load(args)
   height = love.graphics.getHeight()
   width = love.graphics.getWidth()
-  tickRate = 10
+  tickRate = 100
   currentTime = 0
   ping = 0
   ping2 = 0
@@ -93,7 +93,7 @@ function love.update(dt)
   if server then
     ping = server:round_trip_time()
   end
-  if currentTime > (0 / tickRate) then
+  if currentTime > (1 / tickRate) then
     local event = host:service()
     while event do
       if SERVER then
@@ -113,12 +113,10 @@ function love.update(dt)
       if CLIENT then
         if event.type == 'receive' then
           cmd, params = event.data:match("^(%S*) (.*)")
-          print(event.data)
           if cmd == 'up' then -- Update player position
             local x, y = params:match("^(%-?[%d.e]*) (%-?[%d.e]*)$")
             player.body:setPosition(tonumber(x), tonumber(y))
           elseif cmd == "up2" then
-            print(params)
             local x, y, vX, vY = params:match("^(%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*)$")
             player2.body:setPosition(tonumber(x), tonumber(y))
           elseif cmd == 'pl' then -- Create a player
@@ -136,7 +134,7 @@ function love.update(dt)
       local vX, vY = player.body:getLinearVelocity()
       host:broadcast(string.format("%s %d %d %d %d", 'up2', x, y, vX, vY))
     end
-    currentTime = currentTime - (0 / tickRate)
+    currentTime = currentTime - (1 / tickRate)
     -- print(currentTime)
   end
 
