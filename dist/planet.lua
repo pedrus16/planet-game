@@ -40,7 +40,7 @@ function Planet:_init(x, y, radius, gravity)
   return self
 end
 
-function Planet.update(self, dt)
+function Planet:update(dt)
   local px, py = self.body:getPosition()
 
   for key, object in pairs(objects) do
@@ -56,7 +56,7 @@ function Planet.update(self, dt)
   end
 end
 
-function Planet.draw(self)
+function Planet:draw()
   -- love.graphics.setColor(colorLight());
   -- love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.shape:getRadius() * 1.1)
   love.graphics.setColor(colorLightGreen());

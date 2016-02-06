@@ -47,7 +47,7 @@ function Player:_init(x, y)
   return self
 end
 
-function Player.update(self, dt)
+function Player:update(dt)
   local x, y = self.body:getLinearVelocity()
   local planetX, planetY = self.planet.body:getPosition()
   local playerX, playerY = self.body:getPosition()
@@ -97,7 +97,7 @@ function Player:requestFrame(dt)
   return self
 end
 
-function Player.draw(self)
+function Player:draw()
   -- love.graphics.points(self.body:getPosition())
   -- love.graphics.setColor(255, 0, 0, 255)
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
@@ -115,13 +115,13 @@ function Player.draw(self)
   love.graphics.pop()
 end
 
-function Player.setPlanet(self, planet)
+function Player:setPlanet(planet)
   self.planet = planet
 end
 
-function Player.keypressed(self, key, scancode, isrepeat)
-  local planetX, planetY = player.planet.body:getPosition()
-  local playerX, playerY = player.body:getPosition()
+function Player:keypressed(key, scancode, isrepeat)
+  local planetX, planetY = self.planet.body:getPosition()
+  local playerX, playerY = self.body:getPosition()
   local px, py = vector.normalize(planetX - playerX, planetY - playerY)
   if not self.isAirbourn and key == "space" then
     self.isAirbourn = true
@@ -133,21 +133,21 @@ function Player.keypressed(self, key, scancode, isrepeat)
   end
 end
 
-function Player.beginContact(self, a, b, coll)
+function Player:beginContact(a, b, coll)
 end
 
-function Player.endContact(self, a, b, coll)
+function Player:endContact(a, b, coll)
   if a == self.fixture or b == self.fixture then
     self.isAirbourn = true
   end
 end
 
-function Player.preSolve(self, a, b, coll)
+function Player:preSolve(a, b, coll)
   if a == self.fixture or b == self.fixture then
     self.isAirbourn = false
   end
 end
 
-function Player.postSolve(self, a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
+function Player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
 
 end
