@@ -64,6 +64,10 @@ function Player.update(self, dt)
     self.direction = 1
     currentFrame = currentFrame + dt
     self.playAnim = self.anim.run[math.floor(currentFrame * l) % 3 + 1]
+
+    if server then
+      server:send('left')
+    end
   end
 
   if not self.isAirbourn and love.keyboard.isDown("right") or love.keyboard.isDown("d") then
@@ -72,6 +76,10 @@ function Player.update(self, dt)
     self.direction = -1
     currentFrame = currentFrame + dt
     self.playAnim = self.anim.run[math.floor(currentFrame * l) % 3 + 1]
+
+    if server then
+      server:send('right')
+    end
   end
 
   if self.isAirbourn then
@@ -118,6 +126,10 @@ function Player.keypressed(self, key, scancode, isrepeat)
   if not self.isAirbourn and key == "space" then
     self.isAirbourn = true
     self.body:applyLinearImpulse(-px * 70, -py * 70)
+
+    if server then
+      server:send('jump')
+    end
   end
 end
 

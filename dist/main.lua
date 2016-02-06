@@ -26,8 +26,8 @@ function generateEntities()
   planet1 = Planet(0, 0, 800, 300)
   player = Player(-820, 0)
   player.planet = planet1
-  player2 = Player(0, 0)
-  player2.planet = planet1
+  -- player2 = Player(0, 0)
+  -- player2.planet = planet1
 
   table.insert(objects, player)
   table.insert(objects, player2)
@@ -65,7 +65,6 @@ function love.load(args)
   scale = 1
 
   generateEntities()
-
 end
 
 function initServer()
@@ -78,11 +77,10 @@ function initClient(address)
   CLIENT = true
   host = enet.host_create()
   server = host:connect(address)
+  ping = server:round_trip_time()
   print('INIT CLIENT')
 end
 
-test = 0
-peer = nil
 function love.update(dt)
 
   local pX, pY = player.body:getPosition();
@@ -92,36 +90,53 @@ function love.update(dt)
 
   currentTime = currentTime + dt;
   -- print(currentTime .. ' ' .. (1 / tickRate))
-  if currentTime > (1 / tickRate) then
+  if server then
+    ping = server:round_trip_time()
+  end
+  if currentTime > (0 / tickRate) then
     local event = host:service()
-    if event and event.type == 'connect' then
-      peer = event.peer
-    end
-    if peer then
-      peer:send('ping')
-    end
     while event do
-
-      if event.type == 'receive' then
-        if event.data == 'ping' then
-          event.peer:send('pong')
-        end
-        if event.data == 'pong' then
-          ping = (test * 1000) .. 'ms'
-          test = 0
-          event.peer:send('ping')
-        end
-      end
-      test = test + dt
-
       if SERVER then
+        if event.type == 'connect' then
+          -- Create a player and send its position to the client
+          local pl = Player(-820, 0)
+          pl.planet = planet1
+          table.insert(objects, pl)
+          local x, y = pl.body:getPosition()
+          event.peer:send(string.format("%s %s %s", 'up', x, y))
+
+          -- Send first player position
+          local x, y = player.body:getPosition()
+          event.peer:send(string.format("%s %s %s", 'pl', x, y))
+        end
       end
       if CLIENT then
+        if event.type == 'receive' then
+          cmd, params = event.data:match("^(%S*) (.*)")
+          print(event.data)
+          if cmd == 'up' then -- Update player position
+            local x, y = params:match("^(%-?[%d.e]*) (%-?[%d.e]*)$")
+            player.body:setPosition(tonumber(x), tonumber(y))
+          elseif cmd == "up2" then
+            print(params)
+            local x, y, vX, vY = params:match("^(%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*)$")
+            player2.body:setPosition(tonumber(x), tonumber(y))
+          elseif cmd == 'pl' then -- Create a player
+            local x, y = params:match("^(%-?[%d.e]*) (%-?[%d.e]*)$")
+            player2 = Player(tonumber(x), tonumber(y))
+            player2.planet = planet1
+            table.insert(objects, player2)
+          end
+        end
       end
-
       event = host:service()
     end
-    currentTime = currentTime - (1 / tickRate)
+    if SERVER and host then
+      local x, y = player.body:getPosition()
+      local vX, vY = player.body:getLinearVelocity()
+      host:broadcast(string.format("%s %d %d %d %d", 'up2', x, y, vX, vY))
+    end
+    currentTime = currentTime - (0 / tickRate)
     -- print(currentTime)
   end
 
@@ -195,12 +210,6 @@ function love.keypressed(key, scancode, isrepeat)
   if key == 'down' and scale >= 0 then
     scale = scale * 0.5
   end
-  -- if key == 's' then
-  --   initServer()
-  -- end
-  -- if key == 'c' then
-  --   initClient()
-  -- end
   if key == 'escape' then
     love.event.quit()
   end
