@@ -3,6 +3,15 @@ require "planet"
 require "rocket"
 require "enet"
 
+inputs = {
+  left = 'MoveLeft',
+  right = 'MoveRight',
+  up = 'MoveUp',
+  down = 'MoveDown',
+  space = 'Jump',
+  escape = 'Quit'
+}
+
 function colorLight()
   return 252, 245, 184
 end
@@ -26,10 +35,6 @@ function generateEntities()
   planet1 = Planet(0, 0, 800, 300)
   localPlayer = Player(-820, 0)
   localPlayer.planet = planet1
-  --
-  -- for k, player in pairs(players) do
-  --   player.planet = planet1
-  -- end
 
   table.insert(objects, localPlayer)
   table.insert(objects, planet1)
@@ -45,12 +50,13 @@ end
 function love.load(args)
   height = love.graphics.getHeight()
   width = love.graphics.getWidth()
-  tickRate = 100
+  tickRate = 60
   currentTime = 0
   ping = 0
   scale = 1
   SERVER = false
   CLIENT = false
+  server = nil
   world = love.physics.newWorld(0, 0, true)
   world:setCallbacks(beginContact, endContact, preSolve, postSolve)
   generateEntities()
@@ -107,10 +113,21 @@ function love.update(dt)
           local x, y = localPlayer.body:getPosition()
           event.peer:send(string.format("%s %d %d %d", 'pl', 0, x, y))
           for id, player in pairs(players) do
-            print(clientID)
+            local x, y = player.body:getPosition()
             if id ~= clientID then
-              local x, y = player.body:getPosition()
               event.peer:send(string.format("%s %d %d %d", 'pl', id, x, y))
+            end
+          end
+        end
+        if event.type == 'receive' then
+          cmd, params = event.data:match("^(%S*) (.*)")
+          if cmd == 'action' then
+            player = players[tonumber(event.peer:index())]
+            -- print('action' .. params)
+            -- print(player['action' .. params])
+            if player and player['action' .. params] then
+              print('ACTION !!!')
+              player['action' .. params](player, dt)
             end
           end
         end
@@ -122,22 +139,34 @@ function love.update(dt)
         if event.type == 'receive' then
           cmd, params = event.data:match("^(%S*) (.*)")
           if cmd == 'up' then -- Update player position
+
             local x, y = params:match("^(%-?[%d.e]*) (%-?[%d.e]*)$")
             localPlayer.body:setPosition(tonumber(x), tonumber(y))
+
           elseif cmd == "up2" then
+
             local id, x, y, vX, vY = params:match("^(%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*)$")
             if tonumber(id) == -1 then
               localPlayer.body:setPosition(tonumber(x), tonumber(y))
             elseif players[id] then
               players[id].body:setPosition(tonumber(x), tonumber(y))
+            else
+             local newPlayer = Player(tonumber(x), tonumber(y))
+             newPlayer.planet = planet1
+             players[id] = newPlayer
+             table.insert(objects, newPlayer)
             end
+
           elseif cmd == 'pl' then -- Create a player
+
             local id, x, y = params:match("^(%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*)$")
             local newPlayer = Player(tonumber(x), tonumber(y))
             players[id] = newPlayer
             newPlayer.planet = planet1
             table.insert(objects, newPlayer)
+
           end
+
         end
 
       end
@@ -161,8 +190,8 @@ function love.update(dt)
             client:send(string.format("%s %d %d %d %d %d", 'up2', id, x, y, vX, vY))
           end
         end
-        -- host:broadcast()
       end
+      host:flush()
     end
 
     currentTime = currentTime - (1 / tickRate)
@@ -205,6 +234,11 @@ function love.draw()
 
   love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10)
   love.graphics.print("Ping: "..tostring(ping), 10, 20)
+  if CLIENT then
+    love.graphics.print('CLIENT', 10, 30)
+  else
+    love.graphics.print('SERVER', 10, 30)
+  end
 end
 
 function beginContact(a, b, coll)

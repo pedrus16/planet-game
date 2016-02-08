@@ -42,43 +42,22 @@ function Player:_init(x, y)
   }
   self.playAnim = self.anim.stand
 
-  currentFrame = 0
-
   return self
 end
 
 function Player:update(dt)
-  local x, y = self.body:getLinearVelocity()
+  -- local x, y = self.body:getLinearVelocity()
   local planetX, planetY = self.planet.body:getPosition()
   local playerX, playerY = self.body:getPosition()
   local px, py = vector.normalize(planetX - playerX, planetY - playerY)
   local length, angle = vector.polar(px, py)
 
-  local l = vector.polar(self.body:getLinearVelocity()) / 10
-
   self.body:setAngle(angle + math.pi * 0.5)
   self.playAnim = self.anim.stand
-  if not self.isAirbourn and love.keyboard.isDown("left") or love.keyboard.isDown("a") then
-    local tx, ty = vector.cartesian(length, angle + math.pi * 0.5)
-    self.body:setLinearVelocity(tx * 100, ty * 100)
-    self.direction = 1
-    currentFrame = currentFrame + dt
-    self.playAnim = self.anim.run[math.floor(currentFrame * l) % 3 + 1]
 
-    if server then
-      server:send('left')
-    end
-  end
-
-  if not self.isAirbourn and love.keyboard.isDown("right") or love.keyboard.isDown("d") then
-    local tx, ty = vector.cartesian(length, angle - math.pi * 0.5)
-    self.body:setLinearVelocity(tx * 100, ty * 100)
-    self.direction = -1
-    currentFrame = currentFrame + dt
-    self.playAnim = self.anim.run[math.floor(currentFrame * l) % 3 + 1]
-
-    if server then
-      server:send('right')
+  for key, value in pairs(inputs) do
+    if love.keyboard.isDown(key) and self['action' .. value] then
+      self['action' .. value](self, dt)
     end
   end
 
@@ -86,15 +65,6 @@ function Player:update(dt)
     self.playAnim = self.anim.jump
   end
 
-  -- if object.planet ~= self and distance < (self.shape:getRadius() + 100) then
-    -- object:setPlanet(self)
-  -- end
-
-end
-
-runSpeed = 1
-function Player:requestFrame(dt)
-  return self
 end
 
 function Player:draw()
@@ -108,9 +78,7 @@ function Player:draw()
   love.graphics.push()
   love.graphics.rotate(self.body:getAngle() + math.pi)
   love.graphics.scale(self.direction, 1)
-
   love.graphics.draw(self.spritesheet, self.playAnim, 30 * -0.5, 40 * -0.5)
-
   love.graphics.pop()
   love.graphics.pop()
 end
@@ -120,17 +88,6 @@ function Player:setPlanet(planet)
 end
 
 function Player:keypressed(key, scancode, isrepeat)
-  local planetX, planetY = self.planet.body:getPosition()
-  local playerX, playerY = self.body:getPosition()
-  local px, py = vector.normalize(planetX - playerX, planetY - playerY)
-  if not self.isAirbourn and key == "space" then
-    self.isAirbourn = true
-    self.body:applyLinearImpulse(-px * 70, -py * 70)
-
-    if server then
-      server:send('jump')
-    end
-  end
 end
 
 function Player:beginContact(a, b, coll)
@@ -149,5 +106,61 @@ function Player:preSolve(a, b, coll)
 end
 
 function Player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
+end
 
+function Player:actionMoveLeft(dt)
+  if true then
+  -- if not self.isAirbourn then
+    print('LEFT')
+    if CLIENT and server then
+      server:send('action MoveLeft')
+    end
+    local planetX, planetY = self.planet.body:getPosition()
+    local playerX, playerY = self.body:getPosition()
+    local px, py = vector.normalize(planetX - playerX, planetY - playerY)
+    local length, angle = vector.polar(px, py)
+    local tx, ty = vector.cartesian(length, angle + math.pi * 0.5)
+    local vx, vy = vector.normalize(self.body:getLinearVelocity())
+    self.body:setLinearVelocity(vx + tx * 100, vy + ty * 100)
+    self.direction = 1
+  end
+end
+
+function Player:actionMoveRight(dt)
+  if true then
+  -- if not self.isAirbourn then
+    print('RIGHT')
+    if CLIENT and server then
+      server:send('action MoveRight')
+    end
+    local planetX, planetY = self.planet.body:getPosition()
+    local playerX, playerY = self.body:getPosition()
+    local px, py = self:_getPlanetDirection()
+    local length, angle = vector.polar(px, py)
+    local tx, ty = vector.cartesian(length, angle - math.pi * 0.5)
+    local vx, vy = vector.normalize(self.body:getLinearVelocity())
+    self.body:setLinearVelocity(vx + tx * 100, vy + ty * 100)
+    self.direction = -1
+  end
+end
+
+function Player:actionJump(dt)
+  if true then
+  -- if not self.isAirbourn then
+    print('JUMP')
+    if CLIENT and server then
+      server:send('action Jump')
+    end
+    self.isAirbourn = true
+    local planetX, planetY = self.planet.body:getPosition()
+    local playerX, playerY = self.body:getPosition()
+    local px, py = self:_getPlanetDirection()
+    self.body:applyLinearImpulse(-px * 70, -py * 70)
+  end
+end
+
+function Player:_getPlanetDirection()
+  local planetX, planetY = self.planet.body:getPosition()
+  local playerX, playerY = self.body:getPosition()
+  return vector.normalize(planetX - playerX, planetY - playerY)
 end
