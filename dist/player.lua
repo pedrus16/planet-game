@@ -15,8 +15,8 @@ setmetatable(Player, {
 Player.actions = {
   move_left = 'moveLeft',
   move_right = 'moveRight',
-  move_up = 'moveUp',
-  move_down = 'moveDown',
+  -- move_up = 'moveUp',
+  -- move_down = 'moveDown',
   jump = 'jump'
 }
 
@@ -36,7 +36,7 @@ function Player:_init(x, y)
   self.planet = {}
   self.direction = 1
   self.isAirbourn = true
-
+  self.jumpReleased = true
   self.inputs = {
     move_left = false,
     move_right = false,
@@ -44,8 +44,6 @@ function Player:_init(x, y)
     move_down =false,
     jump = false
   }
-
-
   self.spritesheet = love.graphics.newImage("resources/mario.png")
   self.spritesheet:setFilter("nearest")
   self.anim = {
@@ -73,10 +71,16 @@ function Player:update(dt)
   self.playAnim = self.anim.stand
 
   for key, value in pairs(self.inputs) do
-    if self.inputs[value] == true then
-      local functionName = Player.actions[value]
-      self[functionName](self, dt)
+    if value == true then
+      local functionName = Player.actions[key]
+      if functionName ~= nil then
+        self[functionName](self, dt)
+      end
     end
+  end
+
+  if self.inputs['jump'] == false then
+    self.jumpReleased = true
   end
 
   if self.isAirbourn then
@@ -90,7 +94,7 @@ function Player:draw()
   -- love.graphics.setColor(255, 0, 0, 255)
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
   love.graphics.setColor(255, 255, 255, 255)
-  -- love.graphics.setColor(colorLightGreen());
+  -- love.graphics.setColor(colorLightGreen())
   love.graphics.push()
   love.graphics.translate(self.body:getPosition())
   love.graphics.push()
@@ -107,14 +111,14 @@ end
 
 function Player:keypressed(key, scancode, isrepeat)
   local command = binding[key]
-  if command and self.inputs[command] then
+  if command and self.inputs[command] ~= nil then
     self.inputs[command] = true
   end
 end
 
 function Player:keyreleased(key, scancode, isrepeat)
   local command = binding[key]
-  if command and self.inputs[command] then
+  if command and self.inputs[command] ~= nil then
     self.inputs[command] = false
   end
 end
@@ -138,15 +142,12 @@ function Player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimp
 end
 
 function Player:moveLeft(dt)
-  if true then
-  -- if not self.isAirbourn then
-    print('LEFT')
+  -- if true then
+  if not self.isAirbourn and self.jumpReleased then
     if CLIENT and server then
-      server:send('action MoveLeft')
+      server:send('action move_left')
     end
-    local planetX, planetY = self.planet.body:getPosition()
-    local playerX, playerY = self.body:getPosition()
-    local px, py = vector.normalize(planetX - playerX, planetY - playerY)
+    local px, py = self:_getPlanetDirection()
     local length, angle = vector.polar(px, py)
     local tx, ty = vector.cartesian(length, angle + math.pi * 0.5)
     local vx, vy = vector.normalize(self.body:getLinearVelocity())
@@ -156,14 +157,11 @@ function Player:moveLeft(dt)
 end
 
 function Player:moveRight(dt)
-  if true then
-  -- if not self.isAirbourn then
-    print('RIGHT')
+  -- if true then
+  if not self.isAirbourn and self.jumpReleased then
     if CLIENT and server then
-      server:send('action MoveRight')
+      server:send('action move_right')
     end
-    local planetX, planetY = self.planet.body:getPosition()
-    local playerX, playerY = self.body:getPosition()
     local px, py = self:_getPlanetDirection()
     local length, angle = vector.polar(px, py)
     local tx, ty = vector.cartesian(length, angle - math.pi * 0.5)
@@ -173,18 +171,23 @@ function Player:moveRight(dt)
   end
 end
 
+function Player:isMoving()
+  local x, y = self.body:getLinearVelocity()
+  local a = self.body:getAngularVelocity()
+  return math.floor(math.abs(a) * 100) > 0 or math.floor(math.abs(y) * 100) > 0 or math.floor(math.abs(y) * 100) > 0
+end
+
 function Player:jump(dt)
-  if true then
-  -- if not self.isAirbourn then
-    print('JUMP')
+  local power = 100
+  -- if true then
+  if not self.isAirbourn and self.jumpReleased then
     if CLIENT and server then
-      server:send('action Jump')
+      server:send('action jump')
     end
+    self.jumpReleased = false
     self.isAirbourn = true
-    local planetX, planetY = self.planet.body:getPosition()
-    local playerX, playerY = self.body:getPosition()
     local px, py = self:_getPlanetDirection()
-    self.body:applyLinearImpulse(-px * 70, -py * 70)
+    self.body:applyLinearImpulse(-px * power, -py * power)
   end
 end
 

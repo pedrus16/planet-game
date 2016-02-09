@@ -2,17 +2,8 @@ require "player"
 require "planet"
 require "rocket"
 require "enet"
+suit = require "lib.suit"
 
-inputs = {
-  left = 'MoveLeft',
-  right = 'MoveRight',
-  up = 'MoveUp',
-  down = 'MoveDown',
-  space = 'Jump',
-  escape = 'Quit'
-}
-
---[[
 binding = {
   left = 'move_left',
   right = 'move_right',
@@ -21,7 +12,6 @@ binding = {
   space = 'jump',
   escape = 'quit'
 }
---]]
 
 function colorLight()
   return 252, 245, 184
@@ -42,7 +32,6 @@ end
 function generateEntities()
   objects = {}
   players = {}
-
   planet1 = Planet(0, 0, 800, 300)
   localPlayer = Player(-820, 0)
   localPlayer.planet = planet1
@@ -64,10 +53,13 @@ function love.load(args)
   tickRate = 60
   currentTime = 0
   ping = 0
+  upload = 0
+  download = 0
   scale = 1
   SERVER = false
   CLIENT = false
   server = nil
+
   world = love.physics.newWorld(0, 0, true)
   world:setCallbacks(beginContact, endContact, preSolve, postSolve)
   generateEntities()
@@ -79,33 +71,71 @@ function love.load(args)
       end
     end
   end
-  if not CLIENT then
-    initServer()
-  end
+  -- if not CLIENT then
+    -- initServer()
+  -- end
 end
 
 function initServer()
   SERVER = true
   host = enet.host_create("localhost:6790")
+  print(host)
 end
 
 function initClient(address)
   CLIENT = true
   host = enet.host_create()
   server = host:connect(address)
+  print(host)
+  print(server)
 end
 
+startTime = love.timer.getTime()
+timer = 0
+gameStarted = false
+addressInput = { text = 'localhost' }
+menu = false
 function love.update(dt)
+
+  if not gameStarted then
+
+    if not menu then
+      if suit.Button("Jouer", (width - 100) * 0.5, height * 0.5, 100, 30).hit then
+        initServer()
+        gameStarted = true
+      end
+      if suit.Button("Se connecter", (width - 100) * 0.5, (height * 0.5) + 35, 100, 30).hit then
+        menu = true
+      end
+    end
+
+    if menu then
+      suit.Input(addressInput, (width - 100) * 0.5, height * 0.5, 100, 30)
+      if suit.Button("Go", (width - 100) * 0.5, (height * 0.5) + 35, 100, 30).hit then
+        initClient(addressInput.text .. ':6790')
+        gameStarted = true
+      end
+    end
+
+  end
+
   world:update(dt)
   for k, object in pairs(objects) do
     object:update(dt)
   end
 
-  currentTime = currentTime + dt;
+  currentTime = currentTime + dt
   if server then
     ping = server:round_trip_time()
   end
-  if currentTime > (1 / tickRate) then
+  timer = timer + dt
+  if host and timer > 0.5 then
+    local totalTime = love.timer.getTime() - startTime
+    upload = host:total_sent_data() / totalTime
+    download = host:total_received_data() / totalTime
+    timer = timer - 0.5
+  end
+  if host and currentTime > (1 / tickRate) then
     local event = host:service()
     while event do
 
@@ -134,13 +164,11 @@ function love.update(dt)
           cmd, params = event.data:match("^(%S*) (.*)")
           if cmd == 'action' then
             player = players[tonumber(event.peer:index())]
-            -- print('action' .. params)
-            -- print(player['action' .. params])
-            if player and player.inputs[params] then
-              print('ACTION !!!')
-              player.inputs[params] = true
+            if player and player.inputs[params] ~= nil then
               local functionName = Player.actions[params]
-              player[functionName](player, dt)
+              if functionName ~= nil then
+                player[functionName](player, dt)
+              end
             end
           end
         end
@@ -209,10 +237,10 @@ function love.update(dt)
 
     currentTime = currentTime - (1 / tickRate)
   end
-
 end
 
 function love.keypressed(key, scancode, isrepeat)
+  suit.keypressed(key)
   localPlayer:keypressed(key, scancode, isrepeat)
   if key == 'up' and scale <= 16 then
     scale = scale * 2
@@ -225,18 +253,20 @@ function love.keypressed(key, scancode, isrepeat)
   end
 end
 
-function love.keyrelease(key, scancode, isrepeat)
-  localPlayer:keyrelease(key, scancode, isrepeat)
+function love.keyreleased(key, scancode, isrepeat)
+  localPlayer:keyreleased(key, scancode, isrepeat)
+end
+
+function love.textinput(t)
+  suit.textinput(t)
 end
 
 function love.draw()
   local x, y = localPlayer.body:getPosition()
-
   -- move view to screen center
   love.graphics.push()
   love.graphics.translate(width * 0.5, height * 0.5)
   love.graphics.scale(scale, scale)
-
   -- rotate and move to player angle and position
   love.graphics.push()
   love.graphics.rotate(-localPlayer.body:getAngle() + math.pi)
@@ -249,27 +279,43 @@ function love.draw()
   love.graphics.pop()
   love.graphics.pop()
 
-  love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10)
-  love.graphics.print("Ping: "..tostring(ping), 10, 20)
+  suit.draw()
+
   if CLIENT then
-    love.graphics.print('CLIENT', 10, 30)
+    love.graphics.print('CLIENT', 10, 10)
   else
-    love.graphics.print('SERVER', 10, 30)
+    love.graphics.print('SERVER', 10, 10)
   end
+  love.graphics.print("FPS: "..tostring(love.timer.getFPS( )), 10, 24)
+  love.graphics.print("Ping: ".. tostring(ping) .. 'ms', 10, 38)
+  love.graphics.print(string.format('Upload: %g kb/s', tostring(upload / 1000)), 10, 52)
+  love.graphics.print(string.format('Download: %g kb/s', tostring(download / 1000)), 10, 66)
 end
 
 function beginContact(a, b, coll)
   localPlayer:beginContact(a, b, coll)
+  for _,player in pairs(players) do
+    player:beginContact(a, b, coll)
+  end
 end
 
 function endContact(a, b, coll)
   localPlayer:endContact(a, b, coll)
+  for _,player in pairs(players) do
+    player:endContact(a, b, coll)
+  end
 end
 
 function preSolve(a, b, coll)
   localPlayer:preSolve(a, b, coll)
+  for _,player in pairs(players) do
+    player:preSolve(a, b, coll)
+  end
 end
 
 function postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
   localPlayer:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
+  for _,player in pairs(players) do
+    player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
+  end
 end
