@@ -12,6 +12,17 @@ inputs = {
   escape = 'Quit'
 }
 
+--[[
+binding = {
+  left = 'move_left',
+  right = 'move_right',
+  up = 'move_up',
+  down = 'move_down',
+  space = 'jump',
+  escape = 'quit'
+}
+--]]
+
 function colorLight()
   return 252, 245, 184
 end
@@ -125,9 +136,11 @@ function love.update(dt)
             player = players[tonumber(event.peer:index())]
             -- print('action' .. params)
             -- print(player['action' .. params])
-            if player and player['action' .. params] then
+            if player and player.inputs[params] then
               print('ACTION !!!')
-              player['action' .. params](player, dt)
+              player.inputs[params] = true
+              local functionName = Player.actions[params]
+              player[functionName](player, dt)
             end
           end
         end
@@ -210,6 +223,10 @@ function love.keypressed(key, scancode, isrepeat)
   if key == 'escape' then
     love.event.quit()
   end
+end
+
+function love.keyrelease(key, scancode, isrepeat)
+  localPlayer:keyrelease(key, scancode, isrepeat)
 end
 
 function love.draw()

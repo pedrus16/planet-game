@@ -12,6 +12,14 @@ setmetatable(Player, {
   end,
 })
 
+Player.actions = {
+  move_left = 'moveLeft',
+  move_right = 'moveRight',
+  move_up = 'moveUp',
+  move_down = 'moveDown',
+  jump = 'jump'
+}
+
 function Player:_init(x, y)
   GameObject._init(self)
 
@@ -28,6 +36,15 @@ function Player:_init(x, y)
   self.planet = {}
   self.direction = 1
   self.isAirbourn = true
+
+  self.inputs = {
+    move_left = false,
+    move_right = false,
+    move_up = false,
+    move_down =false,
+    jump = false
+  }
+
 
   self.spritesheet = love.graphics.newImage("resources/mario.png")
   self.spritesheet:setFilter("nearest")
@@ -55,9 +72,10 @@ function Player:update(dt)
   self.body:setAngle(angle + math.pi * 0.5)
   self.playAnim = self.anim.stand
 
-  for key, value in pairs(inputs) do
-    if love.keyboard.isDown(key) and self['action' .. value] then
-      self['action' .. value](self, dt)
+  for key, value in pairs(self.inputs) do
+    if self.inputs[value] == true then
+      local functionName = Player.actions[value]
+      self[functionName](self, dt)
     end
   end
 
@@ -88,6 +106,17 @@ function Player:setPlanet(planet)
 end
 
 function Player:keypressed(key, scancode, isrepeat)
+  local command = binding[key]
+  if command and self.inputs[command] then
+    self.inputs[command] = true
+  end
+end
+
+function Player:keyreleased(key, scancode, isrepeat)
+  local command = binding[key]
+  if command and self.inputs[command] then
+    self.inputs[command] = false
+  end
 end
 
 function Player:beginContact(a, b, coll)
@@ -108,7 +137,7 @@ end
 function Player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
 end
 
-function Player:actionMoveLeft(dt)
+function Player:moveLeft(dt)
   if true then
   -- if not self.isAirbourn then
     print('LEFT')
@@ -126,7 +155,7 @@ function Player:actionMoveLeft(dt)
   end
 end
 
-function Player:actionMoveRight(dt)
+function Player:moveRight(dt)
   if true then
   -- if not self.isAirbourn then
     print('RIGHT')
@@ -144,7 +173,7 @@ function Player:actionMoveRight(dt)
   end
 end
 
-function Player:actionJump(dt)
+function Player:jump(dt)
   if true then
   -- if not self.isAirbourn then
     print('JUMP')
