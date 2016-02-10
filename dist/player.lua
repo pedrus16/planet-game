@@ -31,12 +31,16 @@ function Player:_init(x, y)
   self.body:setFixedRotation(true)
   self.fixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, 0, self.width, self.height), 1)
   self.fixture:setFriction(1)
+  self.footFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, self.height * -0.5, self.width * 0.8, 4), 1)
+  self.footFixture:setSensor(true)
+  self.footShape = self.footFixture:getShape()
   self.shape = self.fixture:getShape()
   self.angle = self.body:getAngle()
   self.planet = {}
   self.direction = 1
   self.isAirbourn = true
   self.jumpReleased = true
+  self.jumpCooldown = 0
   self.inputs = {
     move_left = false,
     move_right = false,
@@ -69,6 +73,9 @@ function Player:update(dt)
 
   self.body:setAngle(angle + math.pi * 0.5)
   self.playAnim = self.anim.stand
+  if self.jumpCooldown > 0 then
+    self.jumpCooldown = self.jumpCooldown - dt
+  end
 
   for key, value in pairs(self.inputs) do
     if value == true then
@@ -79,7 +86,7 @@ function Player:update(dt)
     end
   end
 
-  if self.inputs['jump'] == false then
+  if self.inputs['jump'] == false and not self.isAirbourn then
     self.jumpReleased = true
   end
 
@@ -92,7 +99,9 @@ end
 function Player:draw()
   -- love.graphics.points(self.body:getPosition())
   -- love.graphics.setColor(255, 0, 0, 255)
+  love.graphics.setLineStyle('rough')
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
+  -- love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
   love.graphics.setColor(255, 255, 255, 255)
   -- love.graphics.setColor(colorLightGreen())
   love.graphics.push()
@@ -124,26 +133,25 @@ function Player:keyreleased(key, scancode, isrepeat)
 end
 
 function Player:beginContact(a, b, coll)
+  if a == self.footFixture or b == self.footFixture then
+    self.isAirbourn = false
+  end
 end
 
 function Player:endContact(a, b, coll)
-  if a == self.fixture or b == self.fixture then
+  if a == self.footFixture or b == self.footFixture then
     self.isAirbourn = true
   end
 end
 
 function Player:preSolve(a, b, coll)
-  if a == self.fixture or b == self.fixture then
-    self.isAirbourn = false
-  end
 end
 
 function Player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
 end
 
 function Player:moveLeft(dt)
-  -- if true then
-  if not self.isAirbourn and self.jumpReleased then
+  if not self.isAirbourn then
     if CLIENT and server then
       server:send('action move_left')
     end
@@ -157,8 +165,7 @@ function Player:moveLeft(dt)
 end
 
 function Player:moveRight(dt)
-  -- if true then
-  if not self.isAirbourn and self.jumpReleased then
+  if not self.isAirbourn  then
     if CLIENT and server then
       server:send('action move_right')
     end
@@ -179,11 +186,11 @@ end
 
 function Player:jump(dt)
   local power = 100
-  -- if true then
-  if not self.isAirbourn and self.jumpReleased then
+  if not self.isAirbourn and self.jumpCooldown <= 0 and self.jumpReleased then
     if CLIENT and server then
       server:send('action jump')
     end
+    self.jumpCooldown = 0.1
     self.jumpReleased = false
     self.isAirbourn = true
     local px, py = self:_getPlanetDirection()
