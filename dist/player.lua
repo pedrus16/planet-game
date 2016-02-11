@@ -133,10 +133,10 @@ function Player:draw()
     awake = 'yes'
   end
 
-  love.graphics.print("Contacts " .. self.footContacts, 0, -self.height - 40)
-  love.graphics.print("Airbourn? " .. airbourn, 0, -self.height - 10)
-  love.graphics.print("Released? " .. released, 0, -self.height - 20)
-  love.graphics.print("awake? " .. awake, 0, -self.height - 30)
+  -- love.graphics.print("Contacts " .. self.footContacts, 0, -self.height - 40)
+  -- love.graphics.print("Airbourn? " .. airbourn, 0, -self.height - 10)
+  -- love.graphics.print("Released? " .. released, 0, -self.height - 20)
+  -- love.graphics.print("awake? " .. awake, 0, -self.height - 30)
 
   love.graphics.scale(self.direction, 1)
   love.graphics.draw(self.spritesheet, self.playAnim, 30 * -0.5, 40 * -0.5)
