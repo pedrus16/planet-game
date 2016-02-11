@@ -29,6 +29,7 @@ function Player:_init(x, y)
   self.height = 20
   self.body = love.physics.newBody(world, x, y, "dynamic")
   self.body:setFixedRotation(true)
+  -- self.body:setSleepingAllowed(false)
   self.fixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, 0, self.width, self.height), 1)
   self.fixture:setFriction(1)
   self.footFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, self.height * -0.5, self.width * 0.8, 4), 1)
@@ -101,13 +102,31 @@ function Player:draw()
   -- love.graphics.setColor(255, 0, 0, 255)
   love.graphics.setLineStyle('rough')
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
-  -- love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
+  love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
   love.graphics.setColor(255, 255, 255, 255)
   -- love.graphics.setColor(colorLightGreen())
   love.graphics.push()
   love.graphics.translate(self.body:getPosition())
   love.graphics.push()
   love.graphics.rotate(self.body:getAngle() + math.pi)
+
+  -- local airbourn = 'no'
+  -- if self.isAirbourn then
+  --   airbourn = 'yes'
+  -- end
+  -- local released = 'no'
+  -- if self.jumpReleased then
+  --   released = 'yes'
+  -- end
+  -- local awake = 'no'
+  -- if self.body:isAwake() then
+  --   awake = 'yes'
+  -- end
+  --
+  -- love.graphics.print("Airbourn? " .. airbourn, 0, -self.height - 10)
+  -- love.graphics.print("Released? " .. released, 0, -self.height - 20)
+  -- love.graphics.print("awake? " .. awake, 0, -self.height - 30)
+
   love.graphics.scale(self.direction, 1)
   love.graphics.draw(self.spritesheet, self.playAnim, 30 * -0.5, 40 * -0.5)
   love.graphics.pop()
@@ -134,12 +153,14 @@ end
 
 function Player:beginContact(a, b, coll)
   if a == self.footFixture or b == self.footFixture then
+    print('GROUND')
     self.isAirbourn = false
   end
 end
 
 function Player:endContact(a, b, coll)
   if a == self.footFixture or b == self.footFixture then
+    print('AIRBOURN')
     self.isAirbourn = true
   end
 end
@@ -192,6 +213,7 @@ function Player:jump(dt)
     end
     self.jumpCooldown = 0.1
     self.jumpReleased = false
+    print('AIRBOURN')
     self.isAirbourn = true
     local px, py = self:_getPlanetDirection()
     self.body:applyLinearImpulse(-px * power, -py * power)

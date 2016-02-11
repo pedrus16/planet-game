@@ -78,7 +78,7 @@ end
 
 function initServer()
   SERVER = true
-  host = enet.host_create("localhost:6790")
+  host = enet.host_create("*:6790")
   print(host)
 end
 
@@ -111,9 +111,18 @@ function love.update(dt)
 
     if menu then
       suit.Input(addressInput, (width - 100) * 0.5, height * 0.5, 100, 30)
+      if suit.Button("Effacer", (width - 100) * 0.5 + 105, height * 0.5, 50, 30).hit then
+        addressInput.text = ''
+      end
+      if suit.Button("Coller", (width - 100) * 0.5 + 160, height * 0.5, 50, 30).hit then
+        addressInput.text = love.system.getClipboardText()
+      end
       if suit.Button("Go", (width - 100) * 0.5, (height * 0.5) + 35, 100, 30).hit then
         initClient(addressInput.text .. ':6790')
         gameStarted = true
+      end
+      if suit.Button("Retour", (width - 100) * 0.5, (height * 0.5) + 70, 100, 30).hit then
+        menu = false
       end
     end
 
@@ -216,9 +225,11 @@ function love.update(dt)
     end
 
     if SERVER and host then
-      local x, y = localPlayer.body:getPosition()
-      local vX, vY = localPlayer.body:getLinearVelocity()
-      host:broadcast(string.format("%s %d %d %d %d %d", 'up2', 0, x, y, vX, vY))
+      if localPlayer.body:isAwake() then
+        local x, y = localPlayer.body:getPosition()
+        local vX, vY = localPlayer.body:getLinearVelocity()
+        host:broadcast(string.format("%s %d %d %d %d %d", 'up2', 0, x, y, vX, vY))
+      end
       for index,_ in pairs(players) do
         local client = host:get_peer(index)
         if client then
@@ -226,9 +237,11 @@ function love.update(dt)
             if id == index then
               id = -1
             end
-            local x, y = player.body:getPosition()
-            local vX, vY = player.body:getLinearVelocity()
-            client:send(string.format("%s %d %d %d %d %d", 'up2', id, x, y, vX, vY))
+            if player.body:isAwake() then
+              local x, y = player.body:getPosition()
+              local vX, vY = player.body:getLinearVelocity()
+              client:send(string.format("%s %d %d %d %d %d", 'up2', id, x, y, vX, vY))
+            end
           end
         end
       end
