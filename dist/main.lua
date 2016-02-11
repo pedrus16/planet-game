@@ -33,7 +33,7 @@ function generateEntities()
   objects = {}
   players = {}
   planet1 = Planet(0, 0, 800, 300)
-  localPlayer = Player(-820, 0)
+  localPlayer = Player(0, -820)
   localPlayer.planet = planet1
 
   table.insert(objects, localPlayer)
@@ -59,6 +59,10 @@ function love.load(args)
   SERVER = false
   CLIENT = false
   server = nil
+  backgroundSprite = love.graphics.newImage("resources/space.png")
+  backgroundSprite:setFilter("nearest")
+  backgroundSprite:setWrap('repeat', 'repeat')
+  background = love.graphics.newQuad(0, 0, width * 2 + 64, height * 2 + 64, backgroundSprite:getDimensions())
 
   world = love.physics.newWorld(0, 0, true)
   world:setCallbacks(beginContact, endContact, preSolve, postSolve)
@@ -71,23 +75,18 @@ function love.load(args)
       end
     end
   end
-  -- if not CLIENT then
-    -- initServer()
-  -- end
 end
 
 function initServer()
   SERVER = true
   host = enet.host_create("*:6790")
-  print(host)
+  table.insert(objects, Rocket(50, -920))
 end
 
 function initClient(address)
   CLIENT = true
   host = enet.host_create()
   server = host:connect(address)
-  print(host)
-  print(server)
 end
 
 startTime = love.timer.getTime()
@@ -151,7 +150,7 @@ function love.update(dt)
       if SERVER then
 
         if event.type == 'connect' then
-          local player = Player(-820, 0)
+          local player = Player(0, -900)
           player.planet = planet1
           clientID = event.peer:index()
           players[clientID] = player
@@ -276,6 +275,8 @@ end
 
 function love.draw()
   local x, y = localPlayer.body:getPosition()
+
+
   -- move view to screen center
   love.graphics.push()
   love.graphics.translate(width * 0.5, height * 0.5)
@@ -283,7 +284,23 @@ function love.draw()
   -- rotate and move to player angle and position
   love.graphics.push()
   love.graphics.rotate(-localPlayer.body:getAngle() + math.pi)
+
+
+  -- TEST
+  love.graphics.push()
+  -- love.graphics.translate(localPlayer.body:getPosition())
+  love.graphics.push()
+  love.graphics.translate(-localPlayer.body:getX() % 64, -localPlayer.body:getY() % 64)
+  love.graphics.push()
+  love.graphics.draw(backgroundSprite, background, -width, -height)
+  love.graphics.pop()
+  love.graphics.pop()
+  love.graphics.pop()
+  -- /TEST
+
+
   love.graphics.translate(-x, -y)
+
 
   for k, object in pairs(objects) do
     object:draw()
@@ -291,6 +308,7 @@ function love.draw()
 
   love.graphics.pop()
   love.graphics.pop()
+
 
   suit.draw()
 

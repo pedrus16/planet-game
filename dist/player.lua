@@ -29,17 +29,26 @@ function Player:_init(x, y)
   self.height = 20
   self.body = love.physics.newBody(world, x, y, "dynamic")
   self.body:setFixedRotation(true)
-  -- self.body:setSleepingAllowed(false)
-  self.fixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, 0, self.width, self.height), 1)
+  local playerShape = {
+    self.width * 0.5, self.height * 0.5,
+    self.width * -0.5, self.height * 0.5,
+    self.width * -0.5, self.height * -0.5 + 2,
+    self.width * -0.5 + 2, self.height * -0.5,
+    self.width * 0.5 - 2, self.height * -0.5,
+    self.width * 0.5, self.height * -0.5 + 2
+  }
+  self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(playerShape), 1)
   self.fixture:setFriction(1)
-  self.footFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, self.height * -0.5, self.width * 0.8, 4), 1)
+  self.fixture:setCategory(1)
+  self.fixture:setMask(2)
+  self.footFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, self.height * -0.5, self.width * 0.8, 4), 0)
   self.footFixture:setSensor(true)
   self.footShape = self.footFixture:getShape()
   self.shape = self.fixture:getShape()
   self.angle = self.body:getAngle()
   self.planet = {}
   self.direction = 1
-  self.isAirbourn = true
+  self.footContacts = 0
   self.jumpReleased = true
   self.jumpCooldown = 0
   self.inputs = {
@@ -87,11 +96,11 @@ function Player:update(dt)
     end
   end
 
-  if self.inputs['jump'] == false and not self.isAirbourn then
+  if self.inputs['jump'] == false and self.footContacts > 0 then
     self.jumpReleased = true
   end
 
-  if self.isAirbourn then
+  if self.footContacts <= 0 then
     self.playAnim = self.anim.jump
   end
 
@@ -100,9 +109,10 @@ end
 function Player:draw()
   -- love.graphics.points(self.body:getPosition())
   -- love.graphics.setColor(255, 0, 0, 255)
-  love.graphics.setLineStyle('rough')
+  -- love.graphics.setLineStyle('rough')
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
-  love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
+  -- love.graphics.setColor(255, 0, 0, 255)
+  -- love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
   love.graphics.setColor(255, 255, 255, 255)
   -- love.graphics.setColor(colorLightGreen())
   love.graphics.push()
@@ -110,22 +120,23 @@ function Player:draw()
   love.graphics.push()
   love.graphics.rotate(self.body:getAngle() + math.pi)
 
-  -- local airbourn = 'no'
-  -- if self.isAirbourn then
-  --   airbourn = 'yes'
-  -- end
-  -- local released = 'no'
-  -- if self.jumpReleased then
-  --   released = 'yes'
-  -- end
-  -- local awake = 'no'
-  -- if self.body:isAwake() then
-  --   awake = 'yes'
-  -- end
-  --
-  -- love.graphics.print("Airbourn? " .. airbourn, 0, -self.height - 10)
-  -- love.graphics.print("Released? " .. released, 0, -self.height - 20)
-  -- love.graphics.print("awake? " .. awake, 0, -self.height - 30)
+  local airbourn = 'no'
+  if self.footContacts <= 0 then
+    airbourn = 'yes'
+  end
+  local released = 'no'
+  if self.jumpReleased then
+    released = 'yes'
+  end
+  local awake = 'no'
+  if self.body:isAwake() then
+    awake = 'yes'
+  end
+
+  love.graphics.print("Contacts " .. self.footContacts, 0, -self.height - 40)
+  love.graphics.print("Airbourn? " .. airbourn, 0, -self.height - 10)
+  love.graphics.print("Released? " .. released, 0, -self.height - 20)
+  love.graphics.print("awake? " .. awake, 0, -self.height - 30)
 
   love.graphics.scale(self.direction, 1)
   love.graphics.draw(self.spritesheet, self.playAnim, 30 * -0.5, 40 * -0.5)
@@ -153,15 +164,13 @@ end
 
 function Player:beginContact(a, b, coll)
   if a == self.footFixture or b == self.footFixture then
-    print('GROUND')
-    self.isAirbourn = false
+    self.footContacts = self.footContacts + 1
   end
 end
 
 function Player:endContact(a, b, coll)
   if a == self.footFixture or b == self.footFixture then
-    print('AIRBOURN')
-    self.isAirbourn = true
+    self.footContacts = self.footContacts - 1
   end
 end
 
@@ -172,7 +181,6 @@ function Player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimp
 end
 
 function Player:moveLeft(dt)
-  if not self.isAirbourn then
     if CLIENT and server then
       server:send('action move_left')
     end
@@ -180,22 +188,27 @@ function Player:moveLeft(dt)
     local length, angle = vector.polar(px, py)
     local tx, ty = vector.cartesian(length, angle + math.pi * 0.5)
     local vx, vy = vector.normalize(self.body:getLinearVelocity())
-    self.body:setLinearVelocity(vx + tx * 100, vy + ty * 100)
     self.direction = 1
-  end
+    if self.footContacts > 0 and self.jumpCooldown <= 0 then
+      self.body:setLinearVelocity(vx + tx * 100, vy + ty * 100)
+    else
+      self.body:applyForce(tx * 25, ty * 25)
+    end
 end
 
 function Player:moveRight(dt)
-  if not self.isAirbourn  then
-    if CLIENT and server then
-      server:send('action move_right')
-    end
-    local px, py = self:_getPlanetDirection()
-    local length, angle = vector.polar(px, py)
-    local tx, ty = vector.cartesian(length, angle - math.pi * 0.5)
-    local vx, vy = vector.normalize(self.body:getLinearVelocity())
+  if CLIENT and server then
+    server:send('action move_right')
+  end
+  local px, py = self:_getPlanetDirection()
+  local length, angle = vector.polar(px, py)
+  local tx, ty = vector.cartesian(length, angle - math.pi * 0.5)
+  local vx, vy = vector.normalize(self.body:getLinearVelocity())
+  self.direction = -1
+  if self.footContacts > 0 and self.jumpCooldown <= 0 then
     self.body:setLinearVelocity(vx + tx * 100, vy + ty * 100)
-    self.direction = -1
+  else
+    self.body:applyForce(tx * 25, ty * 25)
   end
 end
 
@@ -207,14 +220,13 @@ end
 
 function Player:jump(dt)
   local power = 100
-  if not self.isAirbourn and self.jumpCooldown <= 0 and self.jumpReleased then
+  if self.footContacts > 0 and self.jumpCooldown <= 0 and self.jumpReleased then
     if CLIENT and server then
       server:send('action jump')
     end
     self.jumpCooldown = 0.1
     self.jumpReleased = false
-    print('AIRBOURN')
-    self.isAirbourn = true
+    -- self.footContacts = 0
     local px, py = self:_getPlanetDirection()
     self.body:applyLinearImpulse(-px * power, -py * power)
   end
