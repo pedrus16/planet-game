@@ -12,15 +12,16 @@ setmetatable(Rocket, {
   end,
 })
 
-function Rocket:_init(x, y)
+function Rocket:_init(x, y, angle)
   GameObject:_init()
 
+  self.driver = {}
   self.width = 28
   self.height = 52
   self.body = love.physics.newBody(world, x, y, "dynamic")
-  -- self.body:setAngle(math.pi * -0.5)
+  self.body:setAngle(angle or 0)
   -- self.body:setFixedRotation(true)
-  self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(16 - 16, 6 - 26, 28 - 16, 40 - 26, 29 - 16, 57 - 26, 2 - 16, 57 - 26, 3 - 16, 40 - 26), 1)
+  self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(16 - 16, 6 - 26, 28 - 16, 40 - 26, 29 - 16, 57 - 26, 2 - 16, 57 - 26, 3 - 16, 40 - 26), 4)
   self.fixture:setFriction(1)
   self.shape = self.fixture:getShape()
   self.angle = self.body:getAngle()
@@ -38,6 +39,10 @@ function Rocket:_init(x, y)
   return self
 end
 
+function Rocket:setDriver(player)
+  self.driver = player
+end
+
 function Rocket:update(dt)
 
 end
@@ -46,17 +51,16 @@ function Rocket:draw()
   -- love.graphics.setColor(255, 0, 0, 255)
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
 
-  love.graphics.setLineStyle('rough')
+  -- love.graphics.setLineStyle('rough')
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.useShape:getPoints()))
 
   love.graphics.push()
   love.graphics.translate(self.body:getPosition())
   love.graphics.push()
-  love.graphics.rotate(self.body:getAngle())
-  love.graphics.scale(self.direction, 1)
-
 
   love.graphics.setColor(colorLight());
+  love.graphics.rotate(self.body:getAngle())
+  love.graphics.scale(self.direction, 1)
   love.graphics.draw(self.spritesheet, self.sprite, 30 * -0.5, 40 * -0.5)
 
   love.graphics.pop()

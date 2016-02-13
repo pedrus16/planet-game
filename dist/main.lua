@@ -59,10 +59,10 @@ function love.load(args)
   SERVER = false
   CLIENT = false
   server = nil
-  backgroundSprite = love.graphics.newImage("resources/space.png")
+  backgroundSprite = love.graphics.newImage("resources/space2.png")
   backgroundSprite:setFilter("nearest")
   backgroundSprite:setWrap('repeat', 'repeat')
-  background = love.graphics.newQuad(0, 0, width * 2 + 64, height * 2 + 64, backgroundSprite:getDimensions())
+  background = love.graphics.newQuad(0, 0, width * 2 + 256, height * 2 + 256, backgroundSprite:getDimensions())
 
   world = love.physics.newWorld(0, 0, true)
   world:setCallbacks(beginContact, endContact, preSolve, postSolve)
@@ -80,7 +80,7 @@ end
 function initServer()
   SERVER = true
   host = enet.host_create("*:6790")
-  table.insert(objects, Rocket(50, -920))
+  table.insert(objects, Rocket(50, -820))
 end
 
 function initClient(address)
@@ -290,7 +290,7 @@ function love.draw()
   love.graphics.push()
   -- love.graphics.translate(localPlayer.body:getPosition())
   love.graphics.push()
-  love.graphics.translate(-localPlayer.body:getX() % 64, -localPlayer.body:getY() % 64)
+  love.graphics.translate(-localPlayer.body:getX() % 256, -localPlayer.body:getY() % 256)
   love.graphics.push()
   love.graphics.draw(backgroundSprite, background, -width, -height)
   love.graphics.pop()

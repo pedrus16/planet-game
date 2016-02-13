@@ -29,6 +29,7 @@ function Player:_init(x, y)
   self.height = 20
   self.body = love.physics.newBody(world, x, y, "dynamic")
   self.body:setFixedRotation(true)
+  self.body:setLinearDamping(0.1)
   local playerShape = {
     self.width * 0.5, self.height * 0.5,
     self.width * -0.5, self.height * 0.5,
@@ -38,11 +39,14 @@ function Player:_init(x, y)
     self.width * 0.5, self.height * -0.5 + 2
   }
   self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(playerShape), 1)
-  self.fixture:setFriction(1)
+  self.fixture:setFriction(0.5)
   self.fixture:setCategory(1)
   self.fixture:setMask(2)
   self.footFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, self.height * -0.5, self.width * 0.8, 4), 0)
   self.footFixture:setSensor(true)
+  self.actionFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(-self.width * 0.75, 0, self.width * 0.5, self.height), 0)
+  self.actionFixture:setSensor(true)
+  self.actionShape = self.actionFixture:getShape()
   self.footShape = self.footFixture:getShape()
   self.shape = self.fixture:getShape()
   self.angle = self.body:getAngle()
@@ -113,6 +117,8 @@ function Player:draw()
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
   -- love.graphics.setColor(255, 0, 0, 255)
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
+  love.graphics.setColor(255, 0, 0, 255)
+  love.graphics.polygon("line", self.body:getWorldPoints(self.actionShape:getPoints()))
   love.graphics.setColor(255, 255, 255, 255)
   -- love.graphics.setColor(colorLightGreen())
   love.graphics.push()
@@ -165,6 +171,9 @@ end
 function Player:beginContact(a, b, coll)
   if a == self.footFixture or b == self.footFixture then
     self.footContacts = self.footContacts + 1
+  elseif a == self.actionFixture then
+    -- if
+  elseif b == self.actionFixture then
   end
 end
 
@@ -191,8 +200,9 @@ function Player:moveLeft(dt)
     self.direction = 1
     if self.footContacts > 0 and self.jumpCooldown <= 0 then
       self.body:setLinearVelocity(vx + tx * 100, vy + ty * 100)
+      -- self.body:applyForce(tx * 300, ty * 300)
     else
-      self.body:applyForce(tx * 25, ty * 25)
+      self.body:applyForce(tx * 50, ty * 50)
     end
 end
 
@@ -207,8 +217,9 @@ function Player:moveRight(dt)
   self.direction = -1
   if self.footContacts > 0 and self.jumpCooldown <= 0 then
     self.body:setLinearVelocity(vx + tx * 100, vy + ty * 100)
+    -- self.body:applyForce(tx * 300, ty * 300)
   else
-    self.body:applyForce(tx * 25, ty * 25)
+    self.body:applyForce(tx * 50, ty * 50)
   end
 end
 
