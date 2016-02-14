@@ -76,7 +76,6 @@ function Rocket:draw()
   love.graphics.push()
 
   -- love.graphics.rotate(self.body:getAngle())
-  -- love.graphics.scale(self.direction, 1)
 
   love.graphics.setColor(colorLight());
   love.graphics.rotate(self.body:getAngle())
@@ -148,4 +147,10 @@ function Rocket:ejectDriver(dt)
     self.driver.body:setLinearVelocity(self.body:getLinearVelocity())
     self.driver = nil
   end
+end
+
+function Rocket:beginContact(a, b, coll)
+end
+
+function Rocket:endContact(a, b, coll)
 end

@@ -35,14 +35,14 @@ end
 function generateEntities()
   objects = {}
   players = {}
-  planet1 = Planet(1000, 0, 800, 300)
-  planet2 = Planet(1000, 3000, 400, 200)
-  localPlayer = Player(0, -820)
+  planet1 = Planet(0, 0, 2000, 300, 1000, 0.1)
+  planet2 = Planet(500, -10000, 800, 200)
+  localPlayer = Player(0, -2200)
   localPlayer.planet = planet1
 
-  table.insert(objects, localPlayer)
   table.insert(objects, planet1)
   table.insert(objects, planet2)
+  table.insert(objects, localPlayer)
   -- table.insert(objects, Planet(500, -2000, 50, 200))
   -- table.insert(objects, Rocket(-920, 50))
   -- table.insert(objects, Rocket(-920, -50))
@@ -85,7 +85,7 @@ end
 function initServer()
   SERVER = true
   host = enet.host_create("*:6790")
-  table.insert(objects, Rocket(50, -820))
+  table.insert(objects, Rocket(50, -2200))
 end
 
 function initClient(address)
@@ -161,7 +161,7 @@ function love.update(dt)
           players[clientID] = player
           table.insert(objects, player)
           local x, y = player.body:getPosition()
-          event.peer:send(string.format("%s %d %d", 'up', x, y))
+          -- event.peer:send(string.format("%s %d %d", 'up', x, y))
 
           -- Send the players positions
           local x, y = localPlayer.body:getPosition()
@@ -324,28 +324,28 @@ end
 
 function beginContact(a, b, coll)
   localPlayer:beginContact(a, b, coll)
-  for _,player in pairs(players) do
-    player:beginContact(a, b, coll)
+  for _,object in pairs(objects) do
+    object:beginContact(a, b, coll)
   end
 end
 
 function endContact(a, b, coll)
   localPlayer:endContact(a, b, coll)
-  for _,player in pairs(players) do
-    player:endContact(a, b, coll)
+  for _,object in pairs(objects) do
+    object:endContact(a, b, coll)
   end
 end
 
-function preSolve(a, b, coll)
-  localPlayer:preSolve(a, b, coll)
-  for _,player in pairs(players) do
-    player:preSolve(a, b, coll)
-  end
-end
-
-function postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
-  localPlayer:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
-  for _,player in pairs(players) do
-    player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
-  end
-end
+-- function preSolve(a, b, coll)
+--   localPlayer:preSolve(a, b, coll)
+--   for _,player in pairs(players) do
+--     player:preSolve(a, b, coll)
+--   end
+-- end
+--
+-- function postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
+--   localPlayer:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
+--   for _,player in pairs(players) do
+--     player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
+--   end
+-- end

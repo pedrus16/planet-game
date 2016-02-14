@@ -30,7 +30,7 @@ function Player:_init(x, y)
   self.height = 20
   self.body = love.physics.newBody(world, x, y, "dynamic")
   self.body:setFixedRotation(true)
-  self.body:setLinearDamping(0.1)
+  -- self.body:setLinearDamping(0.1)
   local playerShape = {
     self.width * 0.5, self.height * 0.5,
     self.width * -0.5, self.height * 0.5,
@@ -41,11 +41,12 @@ function Player:_init(x, y)
   }
   self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(playerShape), 1)
   self.fixture:setFriction(0.5)
-  self.fixture:setCategory(1)
-  self.fixture:setMask(2)
+  -- self.fixture:setCategory(1)
+  -- self.fixture:setMask(2)
   self.shape = self.fixture:getShape()
   self.footFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, self.height * -0.5, self.width * 0.8, 4), 0)
   self.footFixture:setSensor(true)
+  self.footFixture:setMask(2)
   self.actionFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(-self.width * 0.75, 0, self.width * 0.5, self.height), 0)
   self.actionFixture:setSensor(true)
   self.actionShape = self.actionFixture:getShape()
@@ -136,8 +137,8 @@ function Player:draw()
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
   -- love.graphics.setColor(255, 0, 0, 255)
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
-  love.graphics.setColor(255, 0, 0, 255)
-  love.graphics.polygon("line", self.body:getWorldPoints(self.actionShape:getPoints()))
+  -- love.graphics.setColor(255, 0, 0, 255)
+  -- love.graphics.polygon("line", self.body:getWorldPoints(self.actionShape:getPoints()))
   love.graphics.setColor(255, 255, 255, 255)
   -- love.graphics.setColor(colorLightGreen())
   love.graphics.push()
@@ -162,10 +163,11 @@ function Player:draw()
     awake = 'yes'
   end
 
-  -- love.graphics.print("Contacts " .. self.footContacts, 0, -self.height - 40)
-  -- love.graphics.print("Airbourn? " .. airbourn, 0, -self.height - 10)
-  -- love.graphics.print("Released? " .. released, 0, -self.height - 20)
-  -- love.graphics.print("awake? " .. awake, 0, -self.height - 30)
+  love.graphics.print("Airbourn? " .. airbourn, 0, -self.height - 10)
+  love.graphics.print("Released? " .. released, 0, -self.height - 20)
+  love.graphics.print("awake? " .. awake, 0, -self.height - 30)
+  love.graphics.print("Contacts " .. self.footContacts, 0, -self.height - 40)
+  love.graphics.print("Damping " .. self.body:getLinearDamping(), 0, -self.height - 50)
 
   love.graphics.scale(self.direction, 1)
   love.graphics.draw(self.spritesheet, self.playAnim, 30 * -0.5, 40 * -0.5)
@@ -201,9 +203,6 @@ end
 function Player:beginContact(a, b, coll)
   if a == self.footFixture or b == self.footFixture then
     self.footContacts = self.footContacts + 1
-  elseif a == self.actionFixture then
-    -- if
-  elseif b == self.actionFixture then
   end
   if a == self.actionFixture then
     local object = b:getUserData()
@@ -289,7 +288,7 @@ function Player:zoomIn(dt)
 end
 
 function Player:zoomOut(dt)
-  if scale >= 0.25 then
+  if scale > 0 then
     scale = scale * 0.5
   end
 end
