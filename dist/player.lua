@@ -15,9 +15,10 @@ setmetatable(Player, {
 Player.actions = {
   move_left = 'moveLeft',
   move_right = 'moveRight',
-  -- move_up = 'moveUp',
-  -- move_down = 'moveDown',
-  jump = 'jump'
+  jump = 'jump',
+  zoom_in = 'zoomIn',
+  zoom_out = 'zoomOut',
+  use = 'use'
 }
 
 function Player:_init(x, y)
@@ -42,13 +43,16 @@ function Player:_init(x, y)
   self.fixture:setFriction(0.5)
   self.fixture:setCategory(1)
   self.fixture:setMask(2)
+  self.shape = self.fixture:getShape()
   self.footFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, self.height * -0.5, self.width * 0.8, 4), 0)
   self.footFixture:setSensor(true)
   self.actionFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(-self.width * 0.75, 0, self.width * 0.5, self.height), 0)
   self.actionFixture:setSensor(true)
   self.actionShape = self.actionFixture:getShape()
   self.footShape = self.footFixture:getShape()
-  self.shape = self.fixture:getShape()
+  self.actionFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, 0, self.width * 2, self.height), 0)
+  self.actionFixture:setSensor(true)
+  self.actionShape = self.actionFixture:getShape()
   self.angle = self.body:getAngle()
   self.planet = {}
   self.direction = 1
@@ -59,8 +63,11 @@ function Player:_init(x, y)
     move_left = false,
     move_right = false,
     move_up = false,
-    move_down =false,
-    jump = false
+    move_down = false,
+    zoom_in = false,
+    zoom_out = false,
+    jump = false,
+    use = false
   }
   self.spritesheet = love.graphics.newImage("resources/mario.png")
   self.spritesheet:setFilter("nearest")
@@ -74,28 +81,32 @@ function Player:_init(x, y)
     jump = love.graphics.newQuad(120, 120, 30, 40, self.spritesheet:getDimensions())
   }
   self.playAnim = self.anim.stand
+  self.drive = nil
+  self.usable = nil
 
   return self
 end
 
 function Player:update(dt)
   -- local x, y = self.body:getLinearVelocity()
-  local planetX, planetY = self.planet.body:getPosition()
-  local playerX, playerY = self.body:getPosition()
-  local px, py = vector.normalize(planetX - playerX, planetY - playerY)
-  local length, angle = vector.polar(px, py)
+  -- local planetX, planetY = self.planet.body:getPosition()
+  -- local playerX, playerY = self.body:getPosition()
+  -- local px, py = self:_getPlanetDirection()
+  local length, angle = vector.polar(self:_getPlanetDirection())
 
-  self.body:setAngle(angle + math.pi * 0.5)
+  self.body:setAngle(angle - math.pi * 0.5)
   self.playAnim = self.anim.stand
   if self.jumpCooldown > 0 then
     self.jumpCooldown = self.jumpCooldown - dt
   end
 
-  for key, value in pairs(self.inputs) do
-    if value == true then
-      local functionName = Player.actions[key]
-      if functionName ~= nil then
-        self[functionName](self, dt)
+  if  not self.drive then
+    for key, value in pairs(self.inputs) do
+      if value == true then
+        local functionName = Player.actions[key]
+        if functionName ~= nil then
+          self[functionName](self, dt)
+        end
       end
     end
   end
@@ -106,6 +117,14 @@ function Player:update(dt)
 
   if self.footContacts <= 0 then
     self.playAnim = self.anim.jump
+  end
+
+  if self.drive and self.drive.body then
+    self.body:setActive(false)
+    self.body:setPosition(self.drive.body:getPosition())
+    self.body:setAngle(self.drive.body:getAngle() + math.pi)
+  else
+    self.body:setActive(true)
   end
 
 end
@@ -122,7 +141,11 @@ function Player:draw()
   love.graphics.setColor(255, 255, 255, 255)
   -- love.graphics.setColor(colorLightGreen())
   love.graphics.push()
-  love.graphics.translate(self.body:getPosition())
+  -- if self.drive and self.drive.body then
+    -- love.graphics.translate(self.drive.body:getPosition())
+  -- else
+    love.graphics.translate(self.body:getPosition())
+  -- end
   love.graphics.push()
   love.graphics.rotate(self.body:getAngle() + math.pi)
 
@@ -155,17 +178,24 @@ function Player:setPlanet(planet)
 end
 
 function Player:keypressed(key, scancode, isrepeat)
-  local command = binding[key]
-  if command and self.inputs[command] ~= nil then
-    self.inputs[command] = true
-  end
+    if self.drive and self.drive['keypressed'] then
+      self.drive:keypressed(key, scancode, isrepeat)
+    end
+    local command = binding[key]
+    if command and self.inputs[command] ~= nil then
+      self.inputs[command] = true
+    end
 end
 
 function Player:keyreleased(key, scancode, isrepeat)
-  local command = binding[key]
-  if command and self.inputs[command] ~= nil then
-    self.inputs[command] = false
-  end
+    if self.drive and self.drive['keyreleased'] then
+      self.drive:keyreleased(key, scancode, isrepeat)
+    end
+  -- else
+    local command = binding[key]
+    if command and self.inputs[command] ~= nil then
+      self.inputs[command] = false
+    end
 end
 
 function Player:beginContact(a, b, coll)
@@ -174,6 +204,18 @@ function Player:beginContact(a, b, coll)
   elseif a == self.actionFixture then
     -- if
   elseif b == self.actionFixture then
+  end
+  if a == self.actionFixture then
+    local object = b:getUserData()
+    if object and object.type == 'rocket' then
+      self.usable = object.data
+    end
+  end
+  if b == self.actionFixture then
+    local object = a:getUserData()
+    if object and object.type == 'rocket' then
+      self.usable = object.data
+    end
   end
 end
 
@@ -190,20 +232,19 @@ function Player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimp
 end
 
 function Player:moveLeft(dt)
-    if CLIENT and server then
-      server:send('action move_left')
-    end
-    local px, py = self:_getPlanetDirection()
-    local length, angle = vector.polar(px, py)
-    local tx, ty = vector.cartesian(length, angle + math.pi * 0.5)
-    local vx, vy = vector.normalize(self.body:getLinearVelocity())
-    self.direction = 1
-    if self.footContacts > 0 and self.jumpCooldown <= 0 then
-      self.body:setLinearVelocity(vx + tx * 100, vy + ty * 100)
-      -- self.body:applyForce(tx * 300, ty * 300)
-    else
-      self.body:applyForce(tx * 50, ty * 50)
-    end
+  if CLIENT and server then
+    server:send('action move_left')
+  end
+  local px, py = self:_getPlanetDirection()
+  local length, angle = vector.polar(px, py)
+  local tx, ty = vector.cartesian(length, angle - math.pi * 0.5)
+  local vx, vy = vector.normalize(self.body:getLinearVelocity())
+  self.direction = 1
+  if self.footContacts > 0 and self.jumpCooldown <= 0 then
+    self.body:setLinearVelocity(vx + tx * 100, vy + ty * 100)
+  else
+    self.body:applyForce(tx * 25, ty * 25)
+  end
 end
 
 function Player:moveRight(dt)
@@ -212,12 +253,11 @@ function Player:moveRight(dt)
   end
   local px, py = self:_getPlanetDirection()
   local length, angle = vector.polar(px, py)
-  local tx, ty = vector.cartesian(length, angle - math.pi * 0.5)
+  local tx, ty = vector.cartesian(length, angle + math.pi * 0.5)
   local vx, vy = vector.normalize(self.body:getLinearVelocity())
   self.direction = -1
   if self.footContacts > 0 and self.jumpCooldown <= 0 then
     self.body:setLinearVelocity(vx + tx * 100, vy + ty * 100)
-    -- self.body:applyForce(tx * 300, ty * 300)
   else
     self.body:applyForce(tx * 50, ty * 50)
   end
@@ -237,14 +277,29 @@ function Player:jump(dt)
     end
     self.jumpCooldown = 0.1
     self.jumpReleased = false
-    -- self.footContacts = 0
     local px, py = self:_getPlanetDirection()
-    self.body:applyLinearImpulse(-px * power, -py * power)
+    self.body:applyLinearImpulse(px * power, py * power)
+  end
+end
+
+function Player:zoomIn(dt)
+    if scale <= 16 then
+      scale = scale * 2
+    end
+end
+
+function Player:zoomOut(dt)
+  if scale >= 0.25 then
+    scale = scale * 0.5
+  end
+end
+
+function Player:use(dt)
+  if self.usable and self.usable['setDriver'] then
+    self.usable:setDriver(self)
   end
 end
 
 function Player:_getPlanetDirection()
-  local planetX, planetY = self.planet.body:getPosition()
-  local playerX, playerY = self.body:getPosition()
-  return vector.normalize(planetX - playerX, planetY - playerY)
+  return vector.normalize(self.planet.body:getLocalPoint(self.body:getPosition()))
 end

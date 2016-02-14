@@ -10,7 +10,10 @@ binding = {
   up = 'move_up',
   down = 'move_down',
   space = 'jump',
-  escape = 'quit'
+  q = 'zoom_in',
+  w = 'zoom_out',
+  escape = 'quit',
+  e = 'use'
 }
 
 function colorLight()
@@ -32,12 +35,14 @@ end
 function generateEntities()
   objects = {}
   players = {}
-  planet1 = Planet(0, 0, 800, 300)
+  planet1 = Planet(1000, 0, 800, 300)
+  planet2 = Planet(1000, 3000, 400, 200)
   localPlayer = Player(0, -820)
   localPlayer.planet = planet1
 
   table.insert(objects, localPlayer)
   table.insert(objects, planet1)
+  table.insert(objects, planet2)
   -- table.insert(objects, Planet(500, -2000, 50, 200))
   -- table.insert(objects, Rocket(-920, 50))
   -- table.insert(objects, Rocket(-920, -50))
@@ -255,10 +260,10 @@ function love.keypressed(key, scancode, isrepeat)
   suit.keypressed(key)
   localPlayer:keypressed(key, scancode, isrepeat)
   if key == 'up' and scale <= 16 then
-    scale = scale * 2
+    -- scale = scale * 2
   end
   if key == 'down' and scale >= 0 then
-    scale = scale * 0.5
+    -- scale = scale * 0.5
   end
   if key == 'escape' then
     love.event.quit()
@@ -276,7 +281,6 @@ end
 function love.draw()
   local x, y = localPlayer.body:getPosition()
 
-
   -- move view to screen center
   love.graphics.push()
   love.graphics.translate(width * 0.5, height * 0.5)
@@ -285,10 +289,8 @@ function love.draw()
   love.graphics.push()
   love.graphics.rotate(-localPlayer.body:getAngle() + math.pi)
 
-
-  -- TEST
+  -- background
   love.graphics.push()
-  -- love.graphics.translate(localPlayer.body:getPosition())
   love.graphics.push()
   love.graphics.translate(-localPlayer.body:getX() % 256, -localPlayer.body:getY() % 256)
   love.graphics.push()
@@ -296,11 +298,9 @@ function love.draw()
   love.graphics.pop()
   love.graphics.pop()
   love.graphics.pop()
-  -- /TEST
-
+  -- background
 
   love.graphics.translate(-x, -y)
-
 
   for k, object in pairs(objects) do
     object:draw()
@@ -308,7 +308,6 @@ function love.draw()
 
   love.graphics.pop()
   love.graphics.pop()
-
 
   suit.draw()
 
