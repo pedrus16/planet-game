@@ -44,32 +44,28 @@ function Planet:update(dt)
   local px, py = self.body:getPosition()
 
   for key, object in pairs(objects) do
-    local ox, oy = object.body:getPosition()
-    local gx, gy = px - ox, py - oy
+    local gx, gy = self.body:getLocalPoint(object.body:getPosition())
     local distance = vector.polar(gx, gy)
-    gx, gy = vector.normalize(px - ox, py - oy)
+    gx, gy = vector.normalize(gx, gy)
     local force = self.gravity / (distance / self.shape:getRadius())
-    object.body:applyForce(gx * force, gy * force)
-    -- if object.planet ~= self and distance < (self.shape:getRadius() + 100) then
-      -- object:setPlanet(self)
-    -- end
+    object.body:applyForce(-gx * force, -gy * force)
+    if object['setPlanet'] and object.planet ~= self and distance < (self.shape:getRadius() + 200) then
+      object:setPlanet(self)
+    end
   end
 end
 
 function Planet:draw()
-  -- love.graphics.setColor(colorLight());
-  -- love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.shape:getRadius() * 1.1)
   love.graphics.setColor(colorLightGreen());
   love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.shape:getRadius())
   love.graphics.draw(self.batch, self.body:getX(), self.body:getY())
 
   local px, py = self.body:getPosition()
   for key, object in pairs(self.objects) do
-    local ox, oy = object.body:getPosition()
-    local gx, gy = px - ox, py - oy
+    local gx, gy = self.body:getLocalPoint(object.body:getPosition())
 
     local distance = vector.polar(gx, gy)
-    gx, gy = vector.normalize(px - ox, py - oy)
+    gx, gy = vector.normalize(gx, gy)
     local force = self.gravity / (distance / self.shape:getRadius())
     love.graphics.setColor(colorLight())
     -- love.graphics.line(object.body:getX(), object.body:getY(), object.body:getX() + gx * force, object.body:getY() + gy * force)
