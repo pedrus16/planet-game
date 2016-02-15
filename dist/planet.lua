@@ -29,8 +29,9 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density)
   self.spritesheet = love.graphics.newImage("resources/level.png")
   self.spritesheet:setFilter("nearest")
   self.sprite = love.graphics.newQuad(18, 2, 16, 16, self.spritesheet:getDimensions())
-  self.sprite2 = love.graphics.newQuad(18, 19, 16, 16, self.spritesheet:getDimensions())
-  self.batch = love.graphics.newSpriteBatch(self.spritesheet, 100000)
+  self.spriteAtmosphere = love.graphics.newQuad(70, 191, 16, 16, self.spritesheet:getDimensions())
+  self.batch = love.graphics.newSpriteBatch(self.spritesheet, 10000)
+  self.atmosphereBatch = love.graphics.newSpriteBatch(self.spritesheet, 10000)
   self.objects = {}
 
   local segments = math.ceil(self.shape:getRadius() * 2 * math.pi / 16)
@@ -38,9 +39,11 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density)
     self.batch:add(self.sprite, 0, 0, math.rad(i * (360 / segments)), 1, 1, 8, self.shape:getRadius())
   end
   self.batch:flush()
-  for i = 0, segments,1 do
-    self.batch:add(self.sprite, 0, 0, math.rad(i * (360 / segments)), 1, 1, 8, self.shape:getRadius())
+  local segments = math.ceil((self.atmosphereFixture:getShape():getRadius() + 16) * 2 * math.pi / 16)
+  for i = 0, segments - 1,1 do
+    self.atmosphereBatch:add(self.spriteAtmosphere, 0, 0, math.rad(i * (360 / segments)), 1, 1, 8, self.atmosphereFixture:getShape():getRadius() + 16)
   end
+  self.atmosphereBatch:flush()
 
   return self
 end
@@ -61,8 +64,14 @@ function Planet:update(dt)
 end
 
 function Planet:draw()
-  love.graphics.setColor(252, 245, 184, 128)
+  -- love.graphics.setLineWidth(10)
+  -- love.graphics.setColor(180, 205, 147, 32)
+  -- love.graphics.circle("line", self.body:getX(), self.body:getY(), self.atmosphereFixture:getShape():getRadius() + 15)
+  -- love.graphics.setColor(180, 205, 147, 64)
+  -- love.graphics.circle("line", self.body:getX(), self.body:getY(), self.atmosphereFixture:getShape():getRadius() + 5)
+  love.graphics.setColor(180, 205, 147, 128)
   love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.atmosphereFixture:getShape():getRadius())
+  love.graphics.draw(self.atmosphereBatch, self.body:getX(), self.body:getY())
   love.graphics.setColor(colorLightGreen())
   love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.shape:getRadius())
   love.graphics.draw(self.batch, self.body:getX(), self.body:getY())

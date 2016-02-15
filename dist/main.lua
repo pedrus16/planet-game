@@ -2,6 +2,8 @@ require "player"
 require "planet"
 require "rocket"
 require "enet"
+require "server"
+require "client"
 suit = require "lib.suit"
 
 binding = {
@@ -64,6 +66,7 @@ function love.load(args)
   SERVER = false
   CLIENT = false
   server = nil
+  love.graphics.setLineStyle('rough')
   backgroundSprite = love.graphics.newImage("resources/space2.png")
   backgroundSprite:setFilter("nearest")
   backgroundSprite:setWrap('repeat', 'repeat')
@@ -76,23 +79,24 @@ function love.load(args)
   for k, arg in pairs(args) do
     if arg == '--connect' then
       if args[k + 1] then
-        initClient(args[k + 1])
+        client = Client(args[k + 1])
+        -- initClient(args[k + 1])
       end
     end
   end
 end
 
-function initServer()
-  SERVER = true
-  host = enet.host_create("*:6790")
-  table.insert(objects, Rocket(50, -2200))
-end
+-- function initServer()
+--   SERVER = true
+--   host = enet.host_create("*:6790")
+--   table.insert(objects, Rocket(50, -2100))
+-- end
 
-function initClient(address)
-  CLIENT = true
-  host = enet.host_create()
-  server = host:connect(address)
-end
+-- function initClient(address)
+--   CLIENT = true
+--   host = enet.host_create()
+--   serverConnection = host:connect(address)
+-- end
 
 startTime = love.timer.getTime()
 timer = 0
@@ -105,7 +109,7 @@ function love.update(dt)
 
     if not menu then
       if suit.Button("Jouer", (width - 100) * 0.5, height * 0.5, 100, 30).hit then
-        initServer()
+        server = Server('*:6790')
         gameStarted = true
       end
       if suit.Button("Se connecter", (width - 100) * 0.5, (height * 0.5) + 35, 100, 30).hit then
@@ -122,7 +126,8 @@ function love.update(dt)
         addressInput.text = love.system.getClipboardText()
       end
       if suit.Button("Go", (width - 100) * 0.5, (height * 0.5) + 35, 100, 30).hit then
-        initClient(addressInput.text .. ':6790')
+        client = Client(addressInput.text .. ':6790')
+        -- initClient(addressInput.text .. ':6790')
         gameStarted = true
       end
       if suit.Button("Retour", (width - 100) * 0.5, (height * 0.5) + 70, 100, 30).hit then
@@ -137,123 +142,12 @@ function love.update(dt)
     object:update(dt)
   end
 
-  currentTime = currentTime + dt
   if server then
-    ping = server:round_trip_time()
+    server:update(dt)
+  elseif client then
+    client:update(dt)
   end
-  timer = timer + dt
-  if host and timer > 0.5 then
-    local totalTime = love.timer.getTime() - startTime
-    upload = host:total_sent_data() / totalTime
-    download = host:total_received_data() / totalTime
-    timer = timer - 0.5
-  end
-  if host and currentTime > (1 / tickRate) then
-    local event = host:service()
-    while event do
 
-      if SERVER then
-
-        if event.type == 'connect' then
-          local player = Player(0, -900)
-          player.planet = planet1
-          clientID = event.peer:index()
-          players[clientID] = player
-          table.insert(objects, player)
-          local x, y = player.body:getPosition()
-          -- event.peer:send(string.format("%s %d %d", 'up', x, y))
-
-          -- Send the players positions
-          local x, y = localPlayer.body:getPosition()
-          event.peer:send(string.format("%s %d %d %d", 'pl', 0, x, y))
-          for id, player in pairs(players) do
-            local x, y = player.body:getPosition()
-            if id ~= clientID then
-              event.peer:send(string.format("%s %d %d %d", 'pl', id, x, y))
-            end
-          end
-        end
-        if event.type == 'receive' then
-          cmd, params = event.data:match("^(%S*) (.*)")
-          if cmd == 'action' then
-            player = players[tonumber(event.peer:index())]
-            if player and player.inputs[params] ~= nil then
-              local functionName = Player.actions[params]
-              if functionName ~= nil then
-                player[functionName](player, dt)
-              end
-            end
-          end
-        end
-
-      end
-
-      if CLIENT then
-
-        if event.type == 'receive' then
-          cmd, params = event.data:match("^(%S*) (.*)")
-          if cmd == 'up' then -- Update player position
-
-            local x, y = params:match("^(%-?[%d.e]*) (%-?[%d.e]*)$")
-            localPlayer.body:setPosition(tonumber(x), tonumber(y))
-
-          elseif cmd == "up2" then
-
-            local id, x, y, vX, vY = params:match("^(%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*)$")
-            if tonumber(id) == -1 then
-              localPlayer.body:setPosition(tonumber(x), tonumber(y))
-            elseif players[id] then
-              players[id].body:setPosition(tonumber(x), tonumber(y))
-            else
-             local newPlayer = Player(tonumber(x), tonumber(y))
-             newPlayer.planet = planet1
-             players[id] = newPlayer
-             table.insert(objects, newPlayer)
-            end
-
-          elseif cmd == 'pl' then -- Create a player
-
-            local id, x, y = params:match("^(%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*)$")
-            local newPlayer = Player(tonumber(x), tonumber(y))
-            players[id] = newPlayer
-            newPlayer.planet = planet1
-            table.insert(objects, newPlayer)
-
-          end
-
-        end
-
-      end
-
-      event = host:service()
-    end
-
-    if SERVER and host then
-      if localPlayer.body:isAwake() then
-        local x, y = localPlayer.body:getPosition()
-        local vX, vY = localPlayer.body:getLinearVelocity()
-        host:broadcast(string.format("%s %d %d %d %d %d", 'up2', 0, x, y, vX, vY))
-      end
-      for index,_ in pairs(players) do
-        local client = host:get_peer(index)
-        if client then
-          for id, player in pairs(players) do
-            if id == index then
-              id = -1
-            end
-            if player.body:isAwake() then
-              local x, y = player.body:getPosition()
-              local vX, vY = player.body:getLinearVelocity()
-              client:send(string.format("%s %d %d %d %d %d", 'up2', id, x, y, vX, vY))
-            end
-          end
-        end
-      end
-      host:flush()
-    end
-
-    currentTime = currentTime - (1 / tickRate)
-  end
 end
 
 function love.keypressed(key, scancode, isrepeat)
@@ -294,6 +188,7 @@ function love.draw()
   love.graphics.push()
   love.graphics.translate(-localPlayer.body:getX() % 256, -localPlayer.body:getY() % 256)
   love.graphics.push()
+  love.graphics.setColor(180, 205, 147)
   love.graphics.draw(backgroundSprite, background, -width, -height)
   love.graphics.pop()
   love.graphics.pop()
@@ -311,7 +206,7 @@ function love.draw()
 
   suit.draw()
 
-  if CLIENT then
+  if client then
     love.graphics.print('CLIENT', 10, 10)
   else
     love.graphics.print('SERVER', 10, 10)

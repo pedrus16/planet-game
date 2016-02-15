@@ -139,7 +139,7 @@ function Player:draw()
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
   -- love.graphics.setColor(255, 0, 0, 255)
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.actionShape:getPoints()))
-  love.graphics.setColor(255, 255, 255, 255)
+  love.graphics.setColor(180, 205, 147, 255)
   -- love.graphics.setColor(colorLightGreen())
   love.graphics.push()
   -- if self.drive and self.drive.body then
@@ -150,24 +150,24 @@ function Player:draw()
   love.graphics.push()
   love.graphics.rotate(self.body:getAngle() + math.pi)
 
-  local airbourn = 'no'
-  if self.footContacts <= 0 then
-    airbourn = 'yes'
-  end
-  local released = 'no'
-  if self.jumpReleased then
-    released = 'yes'
-  end
-  local awake = 'no'
-  if self.body:isAwake() then
-    awake = 'yes'
-  end
-
-  love.graphics.print("Airbourn? " .. airbourn, 0, -self.height - 10)
-  love.graphics.print("Released? " .. released, 0, -self.height - 20)
-  love.graphics.print("awake? " .. awake, 0, -self.height - 30)
-  love.graphics.print("Contacts " .. self.footContacts, 0, -self.height - 40)
-  love.graphics.print("Damping " .. self.body:getLinearDamping(), 0, -self.height - 50)
+  -- local airbourn = 'no'
+  -- if self.footContacts <= 0 then
+  --   airbourn = 'yes'
+  -- end
+  -- local released = 'no'
+  -- if self.jumpReleased then
+  --   released = 'yes'
+  -- end
+  -- local awake = 'no'
+  -- if self.body:isAwake() then
+  --   awake = 'yes'
+  -- end
+  --
+  -- love.graphics.print("Airbourn? " .. airbourn, 0, -self.height - 10)
+  -- love.graphics.print("Released? " .. released, 0, -self.height - 20)
+  -- love.graphics.print("awake? " .. awake, 0, -self.height - 30)
+  -- love.graphics.print("Contacts " .. self.footContacts, 0, -self.height - 40)
+  -- love.graphics.print("Damping " .. self.body:getLinearDamping(), 0, -self.height - 50)
 
   love.graphics.scale(self.direction, 1)
   love.graphics.draw(self.spritesheet, self.playAnim, 30 * -0.5, 40 * -0.5)
@@ -222,6 +222,12 @@ function Player:endContact(a, b, coll)
   if a == self.footFixture or b == self.footFixture then
     self.footContacts = self.footContacts - 1
   end
+  if a == self.actionFixture then
+    self.usable = nil
+  end
+  if b == self.actionFixture then
+    self.usable = nil
+  end
 end
 
 function Player:preSolve(a, b, coll)
@@ -231,8 +237,8 @@ function Player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimp
 end
 
 function Player:moveLeft(dt)
-  if CLIENT and server then
-    server:send('action move_left')
+  if client then
+    client.server:send('action move_left')
   end
   local px, py = self:_getPlanetDirection()
   local length, angle = vector.polar(px, py)
@@ -247,8 +253,8 @@ function Player:moveLeft(dt)
 end
 
 function Player:moveRight(dt)
-  if CLIENT and server then
-    server:send('action move_right')
+  if client then
+    client.server:send('action move_right')
   end
   local px, py = self:_getPlanetDirection()
   local length, angle = vector.polar(px, py)
@@ -271,8 +277,8 @@ end
 function Player:jump(dt)
   local power = 100
   if self.footContacts > 0 and self.jumpCooldown <= 0 and self.jumpReleased then
-    if CLIENT and server then
-      server:send('action jump')
+    if client then
+      client.server:send('action jump')
     end
     self.jumpCooldown = 0.1
     self.jumpReleased = false
@@ -294,6 +300,9 @@ function Player:zoomOut(dt)
 end
 
 function Player:use(dt)
+  if client then
+    client.server:send('action use')
+  end
   if self.usable and self.usable['setDriver'] then
     self.usable:setDriver(self)
   end

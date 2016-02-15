@@ -24,6 +24,7 @@ Rocket.actions = {
 function Rocket:_init(x, y)
   GameObject:_init()
 
+  self.power = 280
   self.cooldown = 0
   self.driver = nil
   self.width = 28
@@ -77,7 +78,7 @@ function Rocket:draw()
 
   -- love.graphics.rotate(self.body:getAngle())
 
-  love.graphics.setColor(colorLight());
+  love.graphics.setColor(180, 205, 147);
   love.graphics.rotate(self.body:getAngle())
   love.graphics.scale(self.direction, 1)
   love.graphics.draw(self.spritesheet, self.sprite, 30 * -0.5, 40 * -0.5)
@@ -113,13 +114,13 @@ end
 function Rocket:moveUp(dt)
   local x, y = self.body:getWorldPoint(0, self.height * 0.5)
   local fx, fy = vector.cartesian(1, self.body:getAngle() - math.pi * 0.5)
-  self.body:applyForce(fx * 400, fy  * 400, x, y)
+  self.body:applyForce(fx * self.power, fy  * self.power, x, y)
 end
 
 function Rocket:moveDown(dt)
   local x, y = self.body:getWorldPoint(0, self.height * 0.5)
   local fx, fy = vector.cartesian(1, self.body:getAngle() + math.pi * 0.5)
-  self.body:applyForce(fx * 400, fy  * 400, x, y)
+  self.body:applyForce(fx * self.power, fy  * self.power, x, y)
 end
 
 function Rocket:moveLeft(dt)
