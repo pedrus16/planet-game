@@ -24,14 +24,14 @@ Rocket.actions = {
 function Rocket:_init(x, y)
   GameObject:_init()
 
-  self.power = 280
+  self.power = 10000
   self.cooldown = 0
   self.driver = nil
   self.width = 28
   self.height = 52
   self.body = love.physics.newBody(world, x, y, "dynamic")
-  self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(16 - 16, 6 - 26, 28 - 16, 40 - 26, 29 - 16, 57 - 26, 2 - 16, 57 - 26, 3 - 16, 40 - 26), 1)
-  self.fixture:setFriction(1)
+  self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(16 - 16, 6 - 26, 28 - 16, 40 - 26, 29 - 16, 57 - 26, 2 - 16, 57 - 26, 3 - 16, 40 - 26), 30)
+  self.fixture:setFriction(0.8)
   self.fixture:setUserData({ type = 'rocket', data = self })
   self.shape = self.fixture:getShape()
   self.angle = self.body:getAngle()
@@ -124,11 +124,11 @@ function Rocket:moveDown(dt)
 end
 
 function Rocket:moveLeft(dt)
-  self.body:applyTorque(-500)
+  self.body:applyTorque(-10000)
 end
 
 function Rocket:moveRight(dt)
-  self.body:applyTorque(500)
+  self.body:applyTorque(10000)
 end
 
 function Rocket:setDriver(driver)

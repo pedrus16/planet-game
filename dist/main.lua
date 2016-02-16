@@ -37,16 +37,16 @@ end
 function generateEntities()
   objects = {}
   players = {}
-  planet1 = Planet(0, 0, 2000, 300, 1000, 0.1)
-  planet2 = Planet(500, -10000, 800, 200)
-  localPlayer = Player(0, -2200)
+  planet1 = Planet(0, 0, 2000, 9.81, 1000, 0.1)
+  -- planet2 = Planet(500, -10000, 800, 200)
+  localPlayer = Player(0, -2100)
   localPlayer.planet = planet1
 
   table.insert(objects, planet1)
-  table.insert(objects, planet2)
+  -- table.insert(objects, planet2)
   table.insert(objects, localPlayer)
   -- table.insert(objects, Planet(500, -2000, 50, 200))
-  -- table.insert(objects, Rocket(-920, 50))
+  table.insert(objects, Rocket(50, -2200))
   -- table.insert(objects, Rocket(-920, -50))
   -- table.insert(objects, Rocket(-920, 100))
   -- table.insert(objects, Rocket(-920, -100))
@@ -73,6 +73,7 @@ function love.load(args)
   background = love.graphics.newQuad(0, 0, width * 2 + 256, height * 2 + 256, backgroundSprite:getDimensions())
 
   world = love.physics.newWorld(0, 0, true)
+  love.physics.setMeter(30)
   world:setCallbacks(beginContact, endContact, preSolve, postSolve)
   generateEntities()
 

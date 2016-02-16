@@ -21,7 +21,7 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density)
   self.gravity = gravity or 9.81
   self.body = love.physics.newBody(world, x, y)
   self.fixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius), 0)
-  self.fixture:setFriction(1)
+  self.fixture:setFriction(0.8)
   self.atmosphereFixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius + atmosphereSize), 0)
   self.atmosphereFixture:setSensor(true)
   self.atmosphereFixture:setCategory(2)
@@ -54,12 +54,13 @@ function Planet:update(dt)
   for key, object in pairs(objects) do
     local gx, gy = self.body:getLocalPoint(object.body:getPosition())
     local distance = vector.polar(gx, gy)
+    local radius = self.shape:getRadius()
     gx, gy = vector.normalize(gx, gy)
-    local force = self.gravity / (distance / self.shape:getRadius())
-    object.body:applyForce(-gx * force, -gy * force)
-    if object['setPlanet'] and object.planet ~= self and distance < (self.shape:getRadius() + 200) then
-      object:setPlanet(self)
-    end
+    local force = object.body:getMass() * self.gravity * math.pow(radius / distance, 2) * love.physics.getMeter()
+    object.body:applyForce(gx * -force, gy * -force)
+    -- if object['setPlanet'] and object.planet ~= self and distance < (self.shape:getRadius() + 200) then
+    --   object:setPlanet(self)
+    -- end
   end
 end
 
@@ -80,26 +81,43 @@ function Planet:draw()
   love.graphics.setColor(colorLight())
   for key, object in pairs(self.objects) do
     local gx, gy = self.body:getLocalPoint(object.body:getPosition())
-
+    local radius = self.shape:getRadius()
     local distance = vector.polar(gx, gy)
+    local force = object.body:getMass() * self.gravity * math.pow(radius / distance, 2)
+
     gx, gy = vector.normalize(gx, gy)
-    local force = self.gravity / (distance / self.shape:getRadius())
-    -- love.graphics.line(object.body:getX(), object.body:getY(), object.body:getX() + gx * force, object.body:getY() + gy * force)
+    love.graphics.line(object.body:getX(), object.body:getY(), object.body:getX() + gx * force, object.body:getY() + gy * force)
   end
 end
 
 function Planet:beginContact(a, b, coll)
   if a == self.atmosphereFixture then
+    local data = b:getUserData()
+    if data then
+      data.planet = self
+    end
     b:getBody():setLinearDamping(self.density)
   elseif b == self.atmosphereFixture then
+    local data = a:getUserData()
+    if data then
+      data.planet = self
+    end
     a:getBody():setLinearDamping(self.density)
   end
 end
 
 function Planet:endContact(a, b, coll)
   if a == self.atmosphereFixture then
+    local data = b:getUserData()
+    if data then
+      data.planet = nil
+    end
     b:getBody():setLinearDamping(0)
   elseif b == self.atmosphereFixture then
+    local data = a:getUserData()
+    if data then
+      data.planet = nil
+    end
     a:getBody():setLinearDamping(0)
   end
 end

@@ -28,6 +28,8 @@ function Player:_init(x, y)
   self.y = y
   self.width = 14
   self.height = 20
+  self.airSpeed = 300
+  self.groundSpeed = 100
   self.body = love.physics.newBody(world, x, y, "dynamic")
   self.body:setFixedRotation(true)
   -- self.body:setLinearDamping(0.1)
@@ -39,8 +41,9 @@ function Player:_init(x, y)
     self.width * 0.5 - 2, self.height * -0.5,
     self.width * 0.5, self.height * -0.5 + 2
   }
-  self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(playerShape), 1)
-  self.fixture:setFriction(0.5)
+  self.fixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, 0, self.width, self.height), 28)
+  self.fixture:setFriction(0.9)
+  self.fixture:setUserData(self)
   -- self.fixture:setCategory(1)
   -- self.fixture:setMask(2)
   self.shape = self.fixture:getShape()
@@ -55,7 +58,7 @@ function Player:_init(x, y)
   self.actionFixture:setSensor(true)
   self.actionShape = self.actionFixture:getShape()
   self.angle = self.body:getAngle()
-  self.planet = {}
+  self.planet = nil
   self.direction = 1
   self.footContacts = 0
   self.jumpReleased = true
@@ -84,18 +87,19 @@ function Player:_init(x, y)
   self.playAnim = self.anim.stand
   self.drive = nil
   self.usable = nil
-
+  POS = self.body:getY()
+  -- print(0)
   return self
 end
 
 function Player:update(dt)
-  -- local x, y = self.body:getLinearVelocity()
-  -- local planetX, planetY = self.planet.body:getPosition()
-  -- local playerX, playerY = self.body:getPosition()
-  -- local px, py = self:_getPlanetDirection()
-  local length, angle = vector.polar(self:_getPlanetDirection())
-
-  self.body:setAngle(angle - math.pi * 0.5)
+  if self.planet ~= nil then
+    local _, angle = vector.polar(self:_getPlanetDirection())
+    self.body:setAngle(angle - math.pi * 0.5)
+    self.body:setFixedRotation(true)
+  else
+    self.body:setFixedRotation(false)
+  end
   self.playAnim = self.anim.stand
   if self.jumpCooldown > 0 then
     self.jumpCooldown = self.jumpCooldown - dt
@@ -168,6 +172,9 @@ function Player:draw()
   -- love.graphics.print("awake? " .. awake, 0, -self.height - 30)
   -- love.graphics.print("Contacts " .. self.footContacts, 0, -self.height - 40)
   -- love.graphics.print("Damping " .. self.body:getLinearDamping(), 0, -self.height - 50)
+  -- local x, y = self.body:getLinearVelocity()
+  -- love.graphics.print(x, 0, -self.height - 50)
+  -- love.graphics.print(y, 0, -self.height - 40)
 
   love.graphics.scale(self.direction, 1)
   love.graphics.draw(self.spritesheet, self.playAnim, 30 * -0.5, 40 * -0.5)
@@ -203,6 +210,7 @@ end
 function Player:beginContact(a, b, coll)
   if a == self.footFixture or b == self.footFixture then
     self.footContacts = self.footContacts + 1
+    print(TIMER)
   end
   if a == self.actionFixture then
     local object = b:getUserData()
@@ -240,15 +248,19 @@ function Player:moveLeft(dt)
   if client then
     client.server:send('action move_left')
   end
-  local px, py = self:_getPlanetDirection()
-  local length, angle = vector.polar(px, py)
-  local tx, ty = vector.cartesian(length, angle - math.pi * 0.5)
-  local vx, vy = vector.normalize(self.body:getLinearVelocity())
-  self.direction = 1
-  if self.footContacts > 0 and self.jumpCooldown <= 0 then
-    self.body:setLinearVelocity(vx + tx * 100, vy + ty * 100)
+  if self.planet ~= nil then
+    local px, py = self:_getPlanetDirection()
+    local length, angle = vector.polar(px, py)
+    local tx, ty = vector.cartesian(length, angle - math.pi * 0.5)
+    local vx, vy = vector.normalize(self.body:getLinearVelocity())
+    self.direction = 1
+    if self.footContacts > 0 and self.jumpCooldown <= 0 then
+      self.body:setLinearVelocity(vx + tx * self.groundSpeed, vy + ty * self.groundSpeed)
+    else
+      self.body:applyForce(tx * self.airSpeed, ty * self.airSpeed)
+    end
   else
-    self.body:applyForce(tx * 25, ty * 25)
+    self.body:applyTorque(-1000)
   end
 end
 
@@ -256,15 +268,19 @@ function Player:moveRight(dt)
   if client then
     client.server:send('action move_right')
   end
-  local px, py = self:_getPlanetDirection()
-  local length, angle = vector.polar(px, py)
-  local tx, ty = vector.cartesian(length, angle + math.pi * 0.5)
-  local vx, vy = vector.normalize(self.body:getLinearVelocity())
-  self.direction = -1
-  if self.footContacts > 0 and self.jumpCooldown <= 0 then
-    self.body:setLinearVelocity(vx + tx * 100, vy + ty * 100)
+  if self.planet ~= nil then
+    local px, py = self:_getPlanetDirection()
+    local length, angle = vector.polar(px, py)
+    local tx, ty = vector.cartesian(length, angle + math.pi * 0.5)
+    local vx, vy = vector.normalize(self.body:getLinearVelocity())
+    self.direction = -1
+    if self.footContacts > 0 and self.jumpCooldown <= 0 then
+      self.body:setLinearVelocity(vx + tx * self.groundSpeed, vy + ty * self.groundSpeed)
+    else
+      self.body:applyForce(tx * self.airSpeed, ty * self.airSpeed)
+    end
   else
-    self.body:applyForce(tx * 50, ty * 50)
+    self.body:applyTorque(1000)
   end
 end
 
@@ -275,15 +291,17 @@ function Player:isMoving()
 end
 
 function Player:jump(dt)
-  local power = 100
-  if self.footContacts > 0 and self.jumpCooldown <= 0 and self.jumpReleased then
-    if client then
-      client.server:send('action jump')
+  if self.planet ~= nil then
+    local power = self.body:getMass() * 150
+    if self.footContacts > 0 and self.jumpCooldown <= 0 and self.jumpReleased then
+      if client then
+        client.server:send('action jump')
+      end
+      self.jumpCooldown = 0.1
+      self.jumpReleased = false
+      local px, py = self:_getPlanetDirection()
+      self.body:applyLinearImpulse(px * power, py * power)
     end
-    self.jumpCooldown = 0.1
-    self.jumpReleased = false
-    local px, py = self:_getPlanetDirection()
-    self.body:applyLinearImpulse(px * power, py * power)
   end
 end
 
