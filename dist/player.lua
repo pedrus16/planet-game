@@ -29,7 +29,7 @@ function Player:_init(x, y)
   self.width = 14
   self.height = 20
   self.airSpeed = 300
-  self.groundSpeed = 100
+  self.groundSpeed = 60
   self.body = love.physics.newBody(world, x, y, "dynamic")
   self.body:setFixedRotation(true)
   -- self.body:setLinearDamping(0.1)
@@ -42,7 +42,7 @@ function Player:_init(x, y)
     self.width * 0.5, self.height * -0.5 + 2
   }
   self.fixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, 0, self.width, self.height), 28)
-  self.fixture:setFriction(0.9)
+  self.fixture:setFriction(1)
   self.fixture:setUserData(self)
   -- self.fixture:setCategory(1)
   -- self.fixture:setMask(2)
@@ -210,7 +210,6 @@ end
 function Player:beginContact(a, b, coll)
   if a == self.footFixture or b == self.footFixture then
     self.footContacts = self.footContacts + 1
-    print(TIMER)
   end
   if a == self.actionFixture then
     local object = b:getUserData()
@@ -292,7 +291,7 @@ end
 
 function Player:jump(dt)
   if self.planet ~= nil then
-    local power = self.body:getMass() * 150
+    local power = 1500
     if self.footContacts > 0 and self.jumpCooldown <= 0 and self.jumpReleased then
       if client then
         client.server:send('action jump')

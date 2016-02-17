@@ -7,13 +7,13 @@ require "client"
 suit = require "lib.suit"
 
 binding = {
-  left = 'move_left',
-  right = 'move_right',
-  up = 'move_up',
-  down = 'move_down',
+  a = 'move_left',
+  d = 'move_right',
+  w = 'move_up',
+  s = 'move_down',
   space = 'jump',
-  q = 'zoom_in',
-  w = 'zoom_out',
+  z = 'zoom_in',
+  x = 'zoom_out',
   escape = 'quit',
   e = 'use'
 }
@@ -37,16 +37,16 @@ end
 function generateEntities()
   objects = {}
   players = {}
-  planet1 = Planet(0, 0, 2000, 9.81, 1000, 0.1)
-  -- planet2 = Planet(500, -10000, 800, 200)
-  localPlayer = Player(0, -2100)
+  planet1 = Planet(0, 2000, 2000, 9.81 * love.physics.getMeter(), 1000, 0.1, 100)
+  planet2 = Planet(500, -20000, 1000, 5 * love.physics.getMeter(), 200)
+  localPlayer = Player(0, -10)
   localPlayer.planet = planet1
 
   table.insert(objects, planet1)
   -- table.insert(objects, planet2)
   table.insert(objects, localPlayer)
   -- table.insert(objects, Planet(500, -2000, 50, 200))
-  table.insert(objects, Rocket(50, -2200))
+  table.insert(objects, Rocket(50, -32))
   -- table.insert(objects, Rocket(-920, -50))
   -- table.insert(objects, Rocket(-920, 100))
   -- table.insert(objects, Rocket(-920, -100))
@@ -72,8 +72,8 @@ function love.load(args)
   backgroundSprite:setWrap('repeat', 'repeat')
   background = love.graphics.newQuad(0, 0, width * 2 + 256, height * 2 + 256, backgroundSprite:getDimensions())
 
+  love.physics.setMeter(20)
   world = love.physics.newWorld(0, 0, true)
-  love.physics.setMeter(30)
   world:setCallbacks(beginContact, endContact, preSolve, postSolve)
   generateEntities()
 

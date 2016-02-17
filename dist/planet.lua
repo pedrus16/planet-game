@@ -13,15 +13,16 @@ setmetatable(Planet, {
   end,
 })
 
-function Planet:_init(x, y, radius, gravity, atmosphereSize, density)
+function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFall)
   GameObject:_init()
 
   atmosphereSize = atmosphereSize or 0
+  self.gravityFall = gravityFall or 1
   self.density = density or 0
-  self.gravity = gravity or 9.81
+  self.gravity = gravity or 9.81 * love.physics.getMeter()
   self.body = love.physics.newBody(world, x, y)
   self.fixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius), 0)
-  self.fixture:setFriction(0.8)
+  self.fixture:setFriction(1)
   self.atmosphereFixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius + atmosphereSize), 0)
   self.atmosphereFixture:setSensor(true)
   self.atmosphereFixture:setCategory(2)
@@ -52,15 +53,14 @@ function Planet:update(dt)
   local px, py = self.body:getPosition()
 
   for key, object in pairs(objects) do
-    local gx, gy = self.body:getLocalPoint(object.body:getPosition())
-    local distance = vector.polar(gx, gy)
-    local radius = self.shape:getRadius()
-    gx, gy = vector.normalize(gx, gy)
-    local force = object.body:getMass() * self.gravity * math.pow(radius / distance, 2) * love.physics.getMeter()
-    object.body:applyForce(gx * -force, gy * -force)
-    -- if object['setPlanet'] and object.planet ~= self and distance < (self.shape:getRadius() + 200) then
-    --   object:setPlanet(self)
-    -- end
+    if object.body:getMass() > 0 then
+      local gx, gy = self.body:getLocalPoint(object.body:getPosition())
+      local radius = self.shape:getRadius() * self.gravityFall
+      local distance = vector.polar(gx, gy) - self.shape:getRadius()
+      gx, gy = vector.normalize(gx, gy)
+      local force = object.body:getMass() * self.gravity * math.pow(radius / (radius + distance), 2)
+      object.body:applyForce(gx * -force, gy * -force)
+    end
   end
 end
 
@@ -79,14 +79,14 @@ function Planet:draw()
 
   local px, py = self.body:getPosition()
   love.graphics.setColor(colorLight())
-  for key, object in pairs(self.objects) do
+  for key, object in pairs(objects) do
     local gx, gy = self.body:getLocalPoint(object.body:getPosition())
-    local radius = self.shape:getRadius()
-    local distance = vector.polar(gx, gy)
-    local force = object.body:getMass() * self.gravity * math.pow(radius / distance, 2)
+    local radius = self.shape:getRadius() * self.gravityFall
+    local distance = vector.polar(gx, gy) - self.shape:getRadius()
+    local force = self.gravity * math.pow(radius / (radius + distance), 2)
 
     gx, gy = vector.normalize(gx, gy)
-    love.graphics.line(object.body:getX(), object.body:getY(), object.body:getX() + gx * force, object.body:getY() + gy * force)
+    love.graphics.line(object.body:getX(), object.body:getY(), object.body:getX() + gx * -force, object.body:getY() + gy * -force)
   end
 end
 

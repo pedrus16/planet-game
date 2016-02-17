@@ -18,20 +18,23 @@ Rocket.actions = {
   move_right = 'moveRight',
   move_up = 'moveUp',
   move_down = 'moveDown',
-  use = 'ejectDriver'
+  use = 'ejectDriver',
+  zoom_in = 'zoomIn',
+  zoom_out = 'zoomOut',
 }
 
 function Rocket:_init(x, y)
   GameObject:_init()
 
-  self.power = 10000
+  self.power = 1000000000
   self.cooldown = 0
   self.driver = nil
   self.width = 28
   self.height = 52
   self.body = love.physics.newBody(world, x, y, "dynamic")
-  self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(16 - 16, 6 - 26, 28 - 16, 40 - 26, 29 - 16, 57 - 26, 2 - 16, 57 - 26, 3 - 16, 40 - 26), 30)
-  self.fixture:setFriction(0.8)
+  self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(16 - 16, 6 - 26, 28 - 16, 40 - 26, 29 - 16, 57 - 26, 2 - 16, 57 - 26, 3 - 16, 40 - 26), 1000000)
+  print(self.body:getMass())
+  self.fixture:setFriction(1)
   self.fixture:setUserData({ type = 'rocket', data = self })
   self.shape = self.fixture:getShape()
   self.angle = self.body:getAngle()
@@ -40,7 +43,9 @@ function Rocket:_init(x, y)
     move_right = false,
     move_up = false,
     move_down = false,
-    use = false
+    use = false,
+    zoom_in = false,
+    zoom_out = false
   }
   self.spritesheet = love.graphics.newImage("resources/rocket.png")
   self.spritesheet:setFilter("nearest")
@@ -80,7 +85,6 @@ function Rocket:draw()
 
   love.graphics.setColor(180, 205, 147);
   love.graphics.rotate(self.body:getAngle())
-  love.graphics.scale(self.direction, 1)
   love.graphics.draw(self.spritesheet, self.sprite, 30 * -0.5, 40 * -0.5)
 
   love.graphics.pop()
@@ -124,11 +128,11 @@ function Rocket:moveDown(dt)
 end
 
 function Rocket:moveLeft(dt)
-  self.body:applyTorque(-10000)
+  self.body:applyTorque(-1000000000)
 end
 
 function Rocket:moveRight(dt)
-  self.body:applyTorque(10000)
+  self.body:applyTorque(1000000000)
 end
 
 function Rocket:setDriver(driver)
@@ -154,4 +158,16 @@ function Rocket:beginContact(a, b, coll)
 end
 
 function Rocket:endContact(a, b, coll)
+end
+
+function Rocket:zoomIn(dt)
+    if scale <= 16 then
+      scale = scale * 2
+    end
+end
+
+function Rocket:zoomOut(dt)
+  if scale > 0 then
+    scale = scale * 0.5
+  end
 end
