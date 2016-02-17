@@ -33,7 +33,6 @@ function Rocket:_init(x, y)
   self.height = 52
   self.body = love.physics.newBody(world, x, y, "dynamic")
   self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(16 - 16, 6 - 26, 28 - 16, 40 - 26, 29 - 16, 57 - 26, 2 - 16, 57 - 26, 3 - 16, 40 - 26), 1000000)
-  print(self.body:getMass())
   self.fixture:setFriction(1)
   self.fixture:setUserData({ type = 'rocket', data = self })
   self.shape = self.fixture:getShape()
@@ -60,6 +59,11 @@ function Rocket:update(dt)
     self.cooldown = self.cooldown - dt
   end
 
+  if self.driver then
+    -- camera.x, camera.y = self.drive.body:getPosition()
+    -- camera.angle = -self.drive.body:getAngle()
+  end
+
   for key, value in pairs(self.inputs) do
     if value == true then
       local functionName = Rocket.actions[key]
@@ -82,6 +86,10 @@ function Rocket:draw()
   love.graphics.push()
 
   -- love.graphics.rotate(self.body:getAngle())
+  local vx, vy = self.body:getLinearVelocity()
+  local s, a = vector.polar(vx, vy)
+  vx, vy = vector.cartesian(100, a)
+  love.graphics.line(0, 0, vx, vy)
 
   love.graphics.setColor(180, 205, 147);
   love.graphics.rotate(self.body:getAngle())
@@ -116,13 +124,13 @@ function Rocket:endContact(a, b, coll)
 end
 
 function Rocket:moveUp(dt)
-  local x, y = self.body:getWorldPoint(0, self.height * 0.5)
+  local x, y = self.body:getWorldCenter(0, self.height * 0.5)
   local fx, fy = vector.cartesian(1, self.body:getAngle() - math.pi * 0.5)
   self.body:applyForce(fx * self.power, fy  * self.power, x, y)
 end
 
 function Rocket:moveDown(dt)
-  local x, y = self.body:getWorldPoint(0, self.height * 0.5)
+  local x, y = self.body:getWorldCenter(0, self.height * 0.5)
   local fx, fy = vector.cartesian(1, self.body:getAngle() + math.pi * 0.5)
   self.body:applyForce(fx * self.power, fy  * self.power, x, y)
 end
@@ -141,6 +149,7 @@ function Rocket:setDriver(driver)
     self.driver = driver
     driver.drive = self
     driver.body:setActive(false)
+    camera.body = self.body
   end
 end
 
@@ -150,6 +159,7 @@ function Rocket:ejectDriver(dt)
     self.driver.drive = nil
     self.driver.body:setActive(true)
     self.driver.body:setLinearVelocity(self.body:getLinearVelocity())
+    camera.body = self.driver.body
     self.driver = nil
   end
 end
@@ -161,12 +171,14 @@ function Rocket:endContact(a, b, coll)
 end
 
 function Rocket:zoomIn(dt)
+    self.inputs['zoom_in'] = false
     if scale <= 16 then
       scale = scale * 2
     end
 end
 
 function Rocket:zoomOut(dt)
+    self.inputs['zoom_out'] = false
   if scale > 0 then
     scale = scale * 0.5
   end

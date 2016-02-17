@@ -1,4 +1,5 @@
 require "gameObject"
+require "debug"
 
 Player = {}
 Player.__index = Player
@@ -41,22 +42,22 @@ function Player:_init(x, y)
     self.width * 0.5 - 2, self.height * -0.5,
     self.width * 0.5, self.height * -0.5 + 2
   }
+
   self.fixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, 0, self.width, self.height), 28)
   self.fixture:setFriction(1)
   self.fixture:setUserData(self)
-  -- self.fixture:setCategory(1)
-  -- self.fixture:setMask(2)
   self.shape = self.fixture:getShape()
-  self.footFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, self.height * -0.5, self.width * 0.8, 4), 0)
+
+  self.footFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, self.height * 0.5, self.width * 0.8, 4), 0)
   self.footFixture:setSensor(true)
   self.footFixture:setMask(2)
-  self.actionFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(-self.width * 0.75, 0, self.width * 0.5, self.height), 0)
-  self.actionFixture:setSensor(true)
-  self.actionShape = self.actionFixture:getShape()
   self.footShape = self.footFixture:getShape()
+
   self.actionFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, 0, self.width * 2, self.height), 0)
   self.actionFixture:setSensor(true)
+  self.actionFixture:setCategory(2)
   self.actionShape = self.actionFixture:getShape()
+
   self.angle = self.body:getAngle()
   self.planet = nil
   self.direction = 1
@@ -95,7 +96,7 @@ end
 function Player:update(dt)
   if self.planet ~= nil then
     local _, angle = vector.polar(self:_getPlanetDirection())
-    self.body:setAngle(angle - math.pi * 0.5)
+    self.body:setAngle(angle + math.pi * 0.5)
     self.body:setFixedRotation(true)
   else
     self.body:setFixedRotation(false)
@@ -125,13 +126,10 @@ function Player:update(dt)
   end
 
   if self.drive and self.drive.body then
-    self.body:setActive(false)
     self.body:setPosition(self.drive.body:getPosition())
-    self.body:setAngle(self.drive.body:getAngle() + math.pi)
-  else
-    self.body:setActive(true)
+    self.body:setAngle(self.drive.body:getAngle())
   end
-
+  print(self.footContacts)
 end
 
 function Player:draw()
@@ -139,10 +137,10 @@ function Player:draw()
   -- love.graphics.setColor(255, 0, 0, 255)
   -- love.graphics.setLineStyle('rough')
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
-  -- love.graphics.setColor(255, 0, 0, 255)
-  -- love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
-  -- love.graphics.setColor(255, 0, 0, 255)
-  -- love.graphics.polygon("line", self.body:getWorldPoints(self.actionShape:getPoints()))
+  love.graphics.setColor(255, 0, 0, 255)
+  love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
+  love.graphics.setColor(255, 0, 0, 255)
+  love.graphics.polygon("line", self.body:getWorldPoints(self.actionShape:getPoints()))
   love.graphics.setColor(180, 205, 147, 255)
   -- love.graphics.setColor(colorLightGreen())
   love.graphics.push()
@@ -152,7 +150,7 @@ function Player:draw()
     love.graphics.translate(self.body:getPosition())
   -- end
   love.graphics.push()
-  love.graphics.rotate(self.body:getAngle() + math.pi)
+  love.graphics.rotate(self.body:getAngle())
 
   -- local airbourn = 'no'
   -- if self.footContacts <= 0 then
@@ -237,12 +235,6 @@ function Player:endContact(a, b, coll)
   end
 end
 
-function Player:preSolve(a, b, coll)
-end
-
-function Player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
-end
-
 function Player:moveLeft(dt)
   if client then
     client.server:send('action move_left')
@@ -305,12 +297,14 @@ function Player:jump(dt)
 end
 
 function Player:zoomIn(dt)
+    self.inputs['zoom_in'] = false
     if scale <= 16 then
       scale = scale * 2
     end
 end
 
 function Player:zoomOut(dt)
+  self.inputs['zoom_out'] = false
   if scale > 0 then
     scale = scale * 0.5
   end

@@ -37,7 +37,7 @@ function Server:handleEvent(event)
 
   if event.type == 'connect' then
 
-    local player = Player(0, -900)
+    local player = Player(0, 0)
     player.planet = planet1
     local clientID = event.peer:index()
     players[clientID] = player
@@ -95,5 +95,5 @@ function Server:sendUpdates()
     end
   end
   self.host:flush()
-  
+
 end

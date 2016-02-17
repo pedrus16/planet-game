@@ -1,22 +1,12 @@
-require "player"
-require "planet"
-require "rocket"
-require "enet"
-require "server"
+require "camera"
 require "client"
+require "enet"
+require "planet"
+require "player"
+require "rocket"
+require "server"
+require "debug"
 suit = require "lib.suit"
-
-binding = {
-  a = 'move_left',
-  d = 'move_right',
-  w = 'move_up',
-  s = 'move_down',
-  space = 'jump',
-  z = 'zoom_in',
-  x = 'zoom_out',
-  escape = 'quit',
-  e = 'use'
-}
 
 function colorLight()
   return 252, 245, 184
@@ -34,16 +24,60 @@ function colorDark()
   return 64, 63, 63
 end
 
+
+function love.load(args)
+  love.graphics.setLineStyle('rough')
+  love.physics.setMeter(20)
+  binding = {
+    a       = 'move_left',
+    d       = 'move_right',
+    w       = 'move_up',
+    s       = 'move_down',
+    space   = 'jump',
+    z       = 'zoom_in',
+    x       = 'zoom_out',
+    escape  = 'quit',
+    e       = 'use'
+  }
+  height = love.graphics.getHeight()
+  width = love.graphics.getWidth()
+  upload = 0
+  download = 0
+  ping = 0
+  scale = 1
+  backgroundSprite = love.graphics.newImage("resources/space2.png")
+  backgroundSprite:setFilter("nearest")
+  backgroundSprite:setWrap('repeat', 'repeat')
+  background = love.graphics.newQuad(0, 0, width * 2 + 256, height * 2 + 256, backgroundSprite:getDimensions())
+  camera = Camera()
+  gameStarted = false
+  addressInput = { text = 'localhost' }
+  menu = false
+
+  world = love.physics.newWorld(0, 0, true)
+  world:setCallbacks(beginContact, endContact, preSolve, postSolve)
+  generateEntities()
+
+  for k, arg in pairs(args) do
+    if arg == '--connect' then
+      if args[k + 1] then
+        client = Client(args[k + 1])
+      end
+    end
+  end
+end
+
 function generateEntities()
   objects = {}
   players = {}
-  planet1 = Planet(0, 2000, 2000, 9.81 * love.physics.getMeter(), 1000, 0.1, 100)
-  planet2 = Planet(500, -20000, 1000, 5 * love.physics.getMeter(), 200)
+  planet1 = Planet(0, 2000, 2000, 9.81 * love.physics.getMeter(), 1000, 0.1, 10)
+  planet2 = Planet(0, -40000, 1000, 5 * love.physics.getMeter(), 200, 0, 10)
   localPlayer = Player(0, -10)
   localPlayer.planet = planet1
+  camera.body = localPlayer.body
 
   table.insert(objects, planet1)
-  -- table.insert(objects, planet2)
+  table.insert(objects, planet2)
   table.insert(objects, localPlayer)
   -- table.insert(objects, Planet(500, -2000, 50, 200))
   table.insert(objects, Rocket(50, -32))
@@ -54,56 +88,6 @@ function generateEntities()
   -- table.insert(objects, Rocket(-920, 150))
 end
 
-function love.load(args)
-  height = love.graphics.getHeight()
-  width = love.graphics.getWidth()
-  tickRate = 60
-  currentTime = 0
-  ping = 0
-  upload = 0
-  download = 0
-  scale = 1
-  SERVER = false
-  CLIENT = false
-  server = nil
-  love.graphics.setLineStyle('rough')
-  backgroundSprite = love.graphics.newImage("resources/space2.png")
-  backgroundSprite:setFilter("nearest")
-  backgroundSprite:setWrap('repeat', 'repeat')
-  background = love.graphics.newQuad(0, 0, width * 2 + 256, height * 2 + 256, backgroundSprite:getDimensions())
-
-  love.physics.setMeter(20)
-  world = love.physics.newWorld(0, 0, true)
-  world:setCallbacks(beginContact, endContact, preSolve, postSolve)
-  generateEntities()
-
-  for k, arg in pairs(args) do
-    if arg == '--connect' then
-      if args[k + 1] then
-        client = Client(args[k + 1])
-        -- initClient(args[k + 1])
-      end
-    end
-  end
-end
-
--- function initServer()
---   SERVER = true
---   host = enet.host_create("*:6790")
---   table.insert(objects, Rocket(50, -2100))
--- end
-
--- function initClient(address)
---   CLIENT = true
---   host = enet.host_create()
---   serverConnection = host:connect(address)
--- end
-
-startTime = love.timer.getTime()
-timer = 0
-gameStarted = false
-addressInput = { text = 'localhost' }
-menu = false
 function love.update(dt)
 
   if not gameStarted then
@@ -139,6 +123,8 @@ function love.update(dt)
   end
 
   world:update(dt)
+  camera.x, camera.y = localPlayer.body:getPosition()
+  camera.angle = -localPlayer.body:getAngle()
   for k, object in pairs(objects) do
     object:update(dt)
   end
@@ -154,12 +140,6 @@ end
 function love.keypressed(key, scancode, isrepeat)
   suit.keypressed(key)
   localPlayer:keypressed(key, scancode, isrepeat)
-  if key == 'up' and scale <= 16 then
-    -- scale = scale * 2
-  end
-  if key == 'down' and scale >= 0 then
-    -- scale = scale * 0.5
-  end
   if key == 'escape' then
     love.event.quit()
   end
@@ -180,29 +160,32 @@ function love.draw()
   love.graphics.push()
   love.graphics.translate(width * 0.5, height * 0.5)
   love.graphics.scale(scale, scale)
+
   -- rotate and move to player angle and position
-  love.graphics.push()
-  love.graphics.rotate(-localPlayer.body:getAngle() + math.pi)
+  -- love.graphics.push()
+  -- love.graphics.rotate(-localPlayer.body:getAngle() + math.pi)
 
   -- background
-  love.graphics.push()
-  love.graphics.push()
-  love.graphics.translate(-localPlayer.body:getX() % 256, -localPlayer.body:getY() % 256)
-  love.graphics.push()
-  love.graphics.setColor(180, 205, 147)
-  love.graphics.draw(backgroundSprite, background, -width, -height)
-  love.graphics.pop()
-  love.graphics.pop()
-  love.graphics.pop()
+  -- love.graphics.push()
+  -- love.graphics.push()
+  -- love.graphics.translate(-localPlayer.body:getX() % 256, -localPlayer.body:getY() % 256)
+  -- love.graphics.push()
+  -- love.graphics.setColor(180, 205, 147)
+  -- love.graphics.draw(backgroundSprite, background, -width, -height)
+  -- love.graphics.pop()
+  -- love.graphics.pop()
+  -- love.graphics.pop()
   -- background
 
-  love.graphics.translate(-x, -y)
+  -- love.graphics.translate(-x, -y)
 
+  camera:set()
   for k, object in pairs(objects) do
     object:draw()
   end
+  camera:unset()
 
-  love.graphics.pop()
+  -- love.graphics.pop()
   love.graphics.pop()
 
   suit.draw()
@@ -231,17 +214,3 @@ function endContact(a, b, coll)
     object:endContact(a, b, coll)
   end
 end
-
--- function preSolve(a, b, coll)
---   localPlayer:preSolve(a, b, coll)
---   for _,player in pairs(players) do
---     player:preSolve(a, b, coll)
---   end
--- end
---
--- function postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
---   localPlayer:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
---   for _,player in pairs(players) do
---     player:postSolve(a, b, coll, normalimpulse1, tangentimpulse1, normalimpulse2, tangentimpulse2)
---   end
--- end
