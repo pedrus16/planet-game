@@ -32,6 +32,7 @@ function Rocket:_init(x, y)
   self.width = 28
   self.height = 52
   self.body = love.physics.newBody(world, x, y, "dynamic")
+  self.body:setAngularDamping(0.1)
   self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(16 - 16, 6 - 26, 28 - 16, 40 - 26, 29 - 16, 57 - 26, 2 - 16, 57 - 26, 3 - 16, 40 - 26), 1000000)
   self.fixture:setFriction(1)
   self.fixture:setUserData({ type = 'rocket', data = self })
@@ -49,20 +50,53 @@ function Rocket:_init(x, y)
   self.spritesheet = love.graphics.newImage("resources/rocket.png")
   self.spritesheet:setFilter("nearest")
   self.sprite = love.graphics.newQuad(2, 6, 28, 52, self.spritesheet:getDimensions())
+  self.trajectory = {}
 
   return self
 end
 
+timer = 0
 function Rocket:update(dt)
 
   if self.cooldown > 0 then
     self.cooldown = self.cooldown - dt
   end
 
-  if self.driver then
-    -- camera.x, camera.y = self.drive.body:getPosition()
-    -- camera.angle = -self.drive.body:getAngle()
+print(self.body:getLinearDamping())
+timer = timer + dt
+if timer > 0.2 then
+
+  local i
+  local x, y = self.body:getPosition()
+  local vx, vy = self.body:getLinearVelocity()
+  for i = 1,40000,2 do
+    self.trajectory[i] = x
+    self.trajectory[i + 1] = y
+    x = x + vx * 1/60
+    y = y + vy * 1/60
+
+    local p = planet1
+    local gx, gy = p.body:getLocalPoint(x, y)
+    local radius = p.shape:getRadius() * p.gravityFall
+    local distance = vector.polar(gx, gy) - p.shape:getRadius()
+    gx, gy = vector.normalize(gx, gy)
+    local a = p.gravity * 1/60 * math.pow(radius / (radius + distance), 2)
+    vx = vx + gx * -a
+    vy = vy + gy * -a
+
+    p = planet2
+    local gx, gy = p.body:getLocalPoint(x, y)
+    local radius = p.shape:getRadius() * p.gravityFall
+    local distance = vector.polar(gx, gy) - p.shape:getRadius()
+    gx, gy = vector.normalize(gx, gy)
+    local a = p.gravity * 1/60 * math.pow(radius / (radius + distance), 2)
+    vx = vx + gx * -a
+    vy = vy + gy * -a
+
   end
+
+  timer = 0.2 - timer
+end
 
   for key, value in pairs(self.inputs) do
     if value == true then
@@ -81,6 +115,12 @@ function Rocket:draw()
 
   -- love.graphics.setLineStyle('rough')
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.useShape:getPoints()))
+
+  love.graphics.setPointSize(2)
+  -- love.graphics.setLineWidth(10)
+  love.graphics.setColor(255, 0, 0, 255)
+  love.graphics.points(self.trajectory)
+
   love.graphics.push()
   love.graphics.translate(self.body:getPosition())
   love.graphics.push()

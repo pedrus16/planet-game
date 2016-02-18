@@ -70,7 +70,7 @@ end
 function generateEntities()
   objects = {}
   players = {}
-  planet1 = Planet(0, 2000, 2000, 9.81 * love.physics.getMeter(), 1000, 0.1, 10)
+  planet1 = Planet(0, 2000, 2000, 9.81 * love.physics.getMeter(), 000, 0.1, 10)
   planet2 = Planet(0, -40000, 1000, 5 * love.physics.getMeter(), 200, 0, 10)
   localPlayer = Player(0, -10)
   localPlayer.planet = planet1
