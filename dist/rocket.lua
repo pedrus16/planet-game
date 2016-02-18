@@ -64,23 +64,24 @@ function Rocket:update(dt)
 
 print(self.body:getLinearDamping())
 timer = timer + dt
-if timer > 0.2 then
+local step = 1/60
+if timer > step then
 
   local i
   local x, y = self.body:getPosition()
   local vx, vy = self.body:getLinearVelocity()
-  for i = 1,40000,2 do
+  for i = 1,3600 * 5,2 do
     self.trajectory[i] = x
     self.trajectory[i + 1] = y
-    x = x + vx * 1/60
-    y = y + vy * 1/60
+    x = x + vx * step
+    y = y + vy * step
 
     local p = planet1
     local gx, gy = p.body:getLocalPoint(x, y)
     local radius = p.shape:getRadius() * p.gravityFall
     local distance = vector.polar(gx, gy) - p.shape:getRadius()
     gx, gy = vector.normalize(gx, gy)
-    local a = p.gravity * 1/60 * math.pow(radius / (radius + distance), 2)
+    local a = p.gravity * step * math.pow(radius / (radius + distance), 2)
     vx = vx + gx * -a
     vy = vy + gy * -a
 
@@ -89,13 +90,13 @@ if timer > 0.2 then
     local radius = p.shape:getRadius() * p.gravityFall
     local distance = vector.polar(gx, gy) - p.shape:getRadius()
     gx, gy = vector.normalize(gx, gy)
-    local a = p.gravity * 1/60 * math.pow(radius / (radius + distance), 2)
+    local a = p.gravity * step * math.pow(radius / (radius + distance), 2)
     vx = vx + gx * -a
     vy = vy + gy * -a
 
   end
 
-  timer = 0.2 - timer
+  timer = step - timer
 end
 
   for key, value in pairs(self.inputs) do
