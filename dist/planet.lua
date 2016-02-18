@@ -16,14 +16,14 @@ setmetatable(Planet, {
 function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFall)
   GameObject:_init()
 
-  atmosphereSize = atmosphereSize or 0
+  self.atmosphereSize = atmosphereSize or 0
   self.gravityFall = gravityFall or 1
   self.density = density or 0
   self.gravity = gravity or 9.81 * love.physics.getMeter()
   self.body = love.physics.newBody(world, x, y)
   self.fixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius), 0)
   self.fixture:setFriction(1)
-  self.atmosphereFixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius + atmosphereSize), 0)
+  self.atmosphereFixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius + self.atmosphereSize), 0)
   self.atmosphereFixture:setSensor(true)
   self.atmosphereFixture:setCategory(2)
   self.shape = self.fixture:getShape()

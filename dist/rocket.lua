@@ -62,19 +62,17 @@ function Rocket:update(dt)
     self.cooldown = self.cooldown - dt
   end
 
-print(self.body:getLinearDamping())
 timer = timer + dt
-local step = 1/60
-if timer > step then
+local step = 6/60
+if timer > 0 then
 
   local i
   local x, y = self.body:getPosition()
   local vx, vy = self.body:getLinearVelocity()
-  for i = 1,3600 * 5,2 do
-    self.trajectory[i] = x
-    self.trajectory[i + 1] = y
-    x = x + vx * step
-    y = y + vy * step
+  trajectory = {}
+  for i = 1,3600,2 do
+    trajectory[i] = x
+    trajectory[i + 1] = y
 
     local p = planet1
     local gx, gy = p.body:getLocalPoint(x, y)
@@ -94,9 +92,27 @@ if timer > step then
     vx = vx + gx * -a
     vy = vy + gy * -a
 
+    xn, yn, fraction = planet1.atmosphereFixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
+    if xn and yn and fraction then
+      hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
+      trajectory[i] = hitx
+      trajectory[i + 1] = hity
+      break;
+    end
+    xn, yn, fraction = planet2.atmosphereFixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
+    if xn and yn and fraction then
+      hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
+      trajectory[i] = hitx
+      trajectory[i + 1] = hity
+      break;
+    end
+    
+    x = x + vx * step
+    y = y + vy * step
+
   end
 
-  timer = step - timer
+  timer = 0 - timer
 end
 
   for key, value in pairs(self.inputs) do
@@ -110,6 +126,18 @@ end
 
 end
 
+function Rocket.rayCastCallback(fixture, x, y, xn, yn, fraction)
+
+  if fixture == planet1.fixture or fixture == planet2.fixture then
+    print(fixture)
+    return 0
+  end
+  table.insert(trajectory, x)
+  table.insert(trajectory, y)
+  -- self.trajectory[i + 1] = y
+  return 1
+end
+
 function Rocket:draw()
   -- love.graphics.setColor(255, 0, 0, 255)
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
@@ -117,10 +145,6 @@ function Rocket:draw()
   -- love.graphics.setLineStyle('rough')
   -- love.graphics.polygon("line", self.body:getWorldPoints(self.useShape:getPoints()))
 
-  love.graphics.setPointSize(2)
-  -- love.graphics.setLineWidth(10)
-  love.graphics.setColor(255, 0, 0, 255)
-  love.graphics.points(self.trajectory)
 
   love.graphics.push()
   love.graphics.translate(self.body:getPosition())
@@ -138,6 +162,13 @@ function Rocket:draw()
 
   love.graphics.pop()
   love.graphics.pop()
+
+  if self.driver then
+    love.graphics.setPointSize(2)
+    -- love.graphics.setLineWidth(10)
+    love.graphics.setColor(255, 0, 0, 255)
+    love.graphics.points(trajectory)
+  end
 
   -- love.graphics.setPointSize(4)
   -- love.graphics.setColor(255, 0, 0, 255)

@@ -70,7 +70,7 @@ end
 function generateEntities()
   objects = {}
   players = {}
-  planet1 = Planet(0, 2000, 2000, 9.81 * love.physics.getMeter(), 000, 0.1, 10)
+  planet1 = Planet(0, 2000, 2000, 9.81 * love.physics.getMeter(), 4000, 0.1, 10)
   planet2 = Planet(0, -40000, 1000, 5 * love.physics.getMeter(), 200, 0, 10)
   localPlayer = Player(0, -10)
   localPlayer.planet = planet1
@@ -122,7 +122,7 @@ function love.update(dt)
 
   end
 
-  world:update(dt)
+  world:update(1/60)
   camera.x, camera.y = localPlayer.body:getPosition()
   camera.angle = -localPlayer.body:getAngle()
   for k, object in pairs(objects) do

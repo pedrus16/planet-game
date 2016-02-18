@@ -129,7 +129,6 @@ function Player:update(dt)
     self.body:setPosition(self.drive.body:getPosition())
     self.body:setAngle(self.drive.body:getAngle())
   end
-  print(self.footContacts)
 end
 
 function Player:draw()
