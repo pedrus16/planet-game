@@ -69,7 +69,9 @@ if timer > 0 then
   local i
   local x, y = self.body:getPosition()
   local vx, vy = self.body:getLinearVelocity()
+
   trajectory = {}
+  local damping = 0
   for i = 1,3600,2 do
     trajectory[i] = x
     trajectory[i + 1] = y
@@ -78,35 +80,43 @@ if timer > 0 then
     local gx, gy = p.body:getLocalPoint(x, y)
     local radius = p.shape:getRadius() * p.gravityFall
     local distance = vector.polar(gx, gy) - p.shape:getRadius()
+    local damping = 0
+    if distance <= p.atmosphereSize then
+      damping = p.density
+    end
     gx, gy = vector.normalize(gx, gy)
     local a = p.gravity * step * math.pow(radius / (radius + distance), 2)
-    vx = vx + gx * -a
-    vy = vy + gy * -a
+    vx = vx + gx * -(a) - vx * damping * step
+    vy = vy + gy * -(a) - vy * damping * step
 
     p = planet2
     local gx, gy = p.body:getLocalPoint(x, y)
     local radius = p.shape:getRadius() * p.gravityFall
     local distance = vector.polar(gx, gy) - p.shape:getRadius()
+    local damping = 0
+    if distance <= p.atmosphereSize then
+      damping = p.density
+    end
     gx, gy = vector.normalize(gx, gy)
     local a = p.gravity * step * math.pow(radius / (radius + distance), 2)
-    vx = vx + gx * -a
-    vy = vy + gy * -a
+    vx = vx + gx * -(a) - vx * damping * step
+    vy = vy + gy * -(a) - vy * damping * step
 
     xn, yn, fraction = planet1.atmosphereFixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
-    if xn and yn and fraction then
-      hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
-      trajectory[i] = hitx
-      trajectory[i + 1] = hity
-      break;
-    end
-    xn, yn, fraction = planet2.atmosphereFixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
-    if xn and yn and fraction then
-      hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
-      trajectory[i] = hitx
-      trajectory[i + 1] = hity
-      break;
-    end
-    
+    -- if xn and yn and fraction then
+      -- hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
+      -- trajectory[i] = hitx
+      -- trajectory[i + 1] = hity
+      -- break;
+    -- end
+    -- xn, yn, fraction = planet2.atmosphereFixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
+    -- if xn and yn and fraction then
+      -- hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
+      -- trajectory[i] = hitx
+      -- trajectory[i + 1] = hity
+      -- break;
+    -- end
+
     x = x + vx * step
     y = y + vy * step
 
@@ -128,10 +138,10 @@ end
 
 function Rocket.rayCastCallback(fixture, x, y, xn, yn, fraction)
 
-  if fixture == planet1.fixture or fixture == planet2.fixture then
-    print(fixture)
-    return 0
-  end
+  -- if fixture == planet1.fixture or fixture == planet2.fixture then
+    -- print(fixture)
+    -- return 0
+  -- end
   table.insert(trajectory, x)
   table.insert(trajectory, y)
   -- self.trajectory[i + 1] = y
@@ -221,7 +231,7 @@ function Rocket:setDriver(driver)
     self.driver = driver
     driver.drive = self
     driver.body:setActive(false)
-    camera.body = self.body
+    -- camera.body = self.body
   end
 end
 
