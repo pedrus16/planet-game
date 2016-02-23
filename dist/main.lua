@@ -71,7 +71,7 @@ function generateEntities()
   objects = {}
   players = {}
   planet1 = Planet(0, 2000, 2000, 9.81 * love.physics.getMeter(), 4000, 0.1, 10)
-  planet2 = Planet(0, -40000, 1000, 5 * love.physics.getMeter(), 200, 0, 10)
+  planet2 = Planet(0, -40000, 1000, 5 * love.physics.getMeter(), 2000, 0.01, 10)
   localPlayer = Player(0, -10)
   localPlayer.planet = planet1
   camera.body = localPlayer.body

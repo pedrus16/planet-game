@@ -102,20 +102,20 @@ if timer > 0 then
     vx = vx + gx * -(a) - vx * damping * step
     vy = vy + gy * -(a) - vy * damping * step
 
-    xn, yn, fraction = planet1.atmosphereFixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
-    -- if xn and yn and fraction then
-      -- hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
-      -- trajectory[i] = hitx
-      -- trajectory[i + 1] = hity
-      -- break;
-    -- end
-    -- xn, yn, fraction = planet2.atmosphereFixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
-    -- if xn and yn and fraction then
-      -- hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
-      -- trajectory[i] = hitx
-      -- trajectory[i + 1] = hity
-      -- break;
-    -- end
+    xn, yn, fraction = planet1.fixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
+    if xn and yn and fraction then
+      hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
+      trajectory[i] = hitx
+      trajectory[i + 1] = hity
+      break;
+    end
+    xn, yn, fraction = planet2.fixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
+    if xn and yn and fraction then
+      hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
+      trajectory[i] = hitx
+      trajectory[i + 1] = hity
+      break;
+    end
 
     x = x + vx * step
     y = y + vy * step
@@ -138,10 +138,10 @@ end
 
 function Rocket.rayCastCallback(fixture, x, y, xn, yn, fraction)
 
-  -- if fixture == planet1.fixture or fixture == planet2.fixture then
-    -- print(fixture)
-    -- return 0
-  -- end
+  if fixture == planet1.fixture or fixture == planet2.fixture then
+    print(fixture)
+    return 0
+  end
   table.insert(trajectory, x)
   table.insert(trajectory, y)
   -- self.trajectory[i + 1] = y
@@ -173,11 +173,11 @@ function Rocket:draw()
   love.graphics.pop()
   love.graphics.pop()
 
-  if self.driver then
-    love.graphics.setPointSize(2)
-    -- love.graphics.setLineWidth(10)
+  if self.driver and table.getn(trajectory) >= 2 then
+    -- love.graphics.setPointSize(2)
+    love.graphics.setLineWidth(1 / scale)
     love.graphics.setColor(255, 0, 0, 255)
-    love.graphics.points(trajectory)
+    love.graphics.line(trajectory)
   end
 
   -- love.graphics.setPointSize(4)
