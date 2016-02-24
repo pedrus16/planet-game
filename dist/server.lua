@@ -74,12 +74,16 @@ function Server:handleEvent(event)
         if player.drive == nil then
           local functionName = Player.actions[params]
           if functionName ~= nil then
-            player[functionName](player, dt)
+            if player[functionName] ~= nil then
+              player[functionName](player, dt)
+            end
           end
         else
           local functionName = Rocket.actions[params]
           if functionName ~= nil then
-            player.drive[functionName](player.drive, dt)
+            if player.drive[functionName] ~= nil then
+              player.drive[functionName](player.drive, dt)
+            end
           end
         end
       end

@@ -230,14 +230,14 @@ function Rocket:endContact(a, b, coll)
 end
 
 function Rocket:zoomIn(dt)
-    self.inputs['zoom_in'] = false
-    if scale <= 16 then
-      scale = scale * 2
-    end
+  self.driver.inputs['zoom_in'] = false
+  if scale <= 16 then
+    scale = scale * 2
+  end
 end
 
 function Rocket:zoomOut(dt)
-    self.inputs['zoom_out'] = false
+  self.driver.inputs['zoom_out'] = false
   if scale > 0 then
     scale = scale * 0.5
   end
