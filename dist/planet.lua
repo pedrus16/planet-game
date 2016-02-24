@@ -23,7 +23,7 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFal
   self.body = love.physics.newBody(world, x, y)
   self.fixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius), 0)
   self.fixture:setFriction(1)
-  self.atmosphereFixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius + self.atmosphereSize), 0)
+  self.atmosphereFixture = love.physics.newFixture(self.body, love.physics.newCircleShape(self.atmosphereSize), 0)
   self.atmosphereFixture:setSensor(true)
   self.atmosphereFixture:setCategory(2)
   self.shape = self.fixture:getShape()
@@ -81,17 +81,17 @@ function Planet:draw()
   love.graphics.line(self.body:getX(), self.body:getY(), self.body:getX(), self.body:getY() - self.shape:getRadius())
   love.graphics.setLineWidth(1)
 
-  local px, py = self.body:getPosition()
-  love.graphics.setColor(colorLight())
-  for key, object in pairs(objects) do
-    local gx, gy = self.body:getLocalPoint(object.body:getPosition())
-    local radius = self.shape:getRadius() * self.gravityFall
-    local distance = vector.polar(gx, gy) - self.shape:getRadius()
-    local force = self.gravity * math.pow(radius / (radius + distance), 2)
-
-    gx, gy = vector.normalize(gx, gy)
-    love.graphics.line(object.body:getX(), object.body:getY(), object.body:getX() + gx * -force, object.body:getY() + gy * -force)
-  end
+  -- local px, py = self.body:getPosition()
+  -- love.graphics.setColor(colorLight())
+  -- for key, object in pairs(objects) do
+  --   local gx, gy = self.body:getLocalPoint(object.body:getPosition())
+  --   local radius = self.shape:getRadius() * self.gravityFall
+  --   local distance = vector.polar(gx, gy) - self.shape:getRadius()
+  --   local force = self.gravity * math.pow(radius / (radius + distance), 2)
+  --
+  --   gx, gy = vector.normalize(gx, gy)
+  --   love.graphics.line(object.body:getX(), object.body:getY(), object.body:getX() + gx * -force, object.body:getY() + gy * -force)
+  -- end
 end
 
 function Planet:beginContact(a, b, coll)

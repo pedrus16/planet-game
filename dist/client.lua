@@ -49,19 +49,37 @@ function Client:handleEvent(event)
       elseif players[id] then
         players[id].body:setPosition(tonumber(x), tonumber(y))
       else
-       local newPlayer = Player(tonumber(x), tonumber(y))
-       newPlayer.planet = planet1
-       players[id] = newPlayer
-       table.insert(objects, newPlayer)
+        local newPlayer = Player(tonumber(x), tonumber(y))
+        newPlayer.planet = planet1
+        players[id] = newPlayer
+        table.insert(objects, newPlayer)
       end
 
-    elseif cmd == 'pl' then -- Create a player
+    elseif cmd == "up3" then
+
+      local id, x, y, vX, vY, angle = params:match("^(%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*)$")
+      print(x .. ' ' .. y .. ' ' .. angle)
+      if objects[id] ~= nil then
+        object = objects[id]
+        object.body:setPosition(tonumber(x), tonumber(y))
+        object.body:setAngle(tonumber(angle))
+        object.body:setLinearVelocity(tonumber(vX), tonumber(vY))
+      end
+
+    elseif cmd == 'player' then -- Create a player
 
       local id, x, y = params:match("^(%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*)$")
       local newPlayer = Player(tonumber(x), tonumber(y))
       players[id] = newPlayer
       newPlayer.planet = planet1
       table.insert(objects, newPlayer)
+
+    elseif cmd == 'rocket' then
+
+      local id, x, y, angle = params:match("^(%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*)$")
+      print(x .. ' ' .. y .. ' ' .. angle)
+      local newRocket = Rocket(tonumber(x), tonumber(y), tonumber(angle))
+      objects[id] = newRocket
 
     end
 

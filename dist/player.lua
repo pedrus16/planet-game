@@ -25,6 +25,7 @@ Player.actions = {
 function Player:_init(x, y)
   GameObject._init(self)
 
+  self.type = 'player'
   self.x = x
   self.y = y
   self.width = 14
@@ -132,47 +133,15 @@ function Player:update(dt)
 end
 
 function Player:draw()
-  -- love.graphics.points(self.body:getPosition())
   -- love.graphics.setColor(255, 0, 0, 255)
-  -- love.graphics.setLineStyle('rough')
-  -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
-  love.graphics.setColor(255, 0, 0, 255)
-  love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
-  love.graphics.setColor(255, 0, 0, 255)
-  love.graphics.polygon("line", self.body:getWorldPoints(self.actionShape:getPoints()))
+  -- love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
+  -- love.graphics.setColor(255, 0, 0, 255)
+  -- love.graphics.polygon("line", self.body:getWorldPoints(self.actionShape:getPoints()))
   love.graphics.setColor(180, 205, 147, 255)
-  -- love.graphics.setColor(colorLightGreen())
   love.graphics.push()
-  -- if self.drive and self.drive.body then
-    -- love.graphics.translate(self.drive.body:getPosition())
-  -- else
-    love.graphics.translate(self.body:getPosition())
-  -- end
+  love.graphics.translate(self.body:getPosition())
   love.graphics.push()
   love.graphics.rotate(self.body:getAngle())
-
-  -- local airbourn = 'no'
-  -- if self.footContacts <= 0 then
-  --   airbourn = 'yes'
-  -- end
-  -- local released = 'no'
-  -- if self.jumpReleased then
-  --   released = 'yes'
-  -- end
-  -- local awake = 'no'
-  -- if self.body:isAwake() then
-  --   awake = 'yes'
-  -- end
-  --
-  -- love.graphics.print("Airbourn? " .. airbourn, 0, -self.height - 10)
-  -- love.graphics.print("Released? " .. released, 0, -self.height - 20)
-  -- love.graphics.print("awake? " .. awake, 0, -self.height - 30)
-  -- love.graphics.print("Contacts " .. self.footContacts, 0, -self.height - 40)
-  -- love.graphics.print("Damping " .. self.body:getLinearDamping(), 0, -self.height - 50)
-  -- local x, y = self.body:getLinearVelocity()
-  -- love.graphics.print(x, 0, -self.height - 50)
-  -- love.graphics.print(y, 0, -self.height - 40)
-
   love.graphics.scale(self.direction, 1)
   love.graphics.draw(self.spritesheet, self.playAnim, 30 * -0.5, 40 * -0.5)
   love.graphics.pop()
@@ -282,7 +251,7 @@ end
 
 function Player:jump(dt)
   if self.planet ~= nil then
-    local power = 1500
+    local power = 1900
     if self.footContacts > 0 and self.jumpCooldown <= 0 and self.jumpReleased then
       if client then
         client.server:send('action jump')

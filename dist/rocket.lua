@@ -23,9 +23,10 @@ Rocket.actions = {
   zoom_out = 'zoomOut',
 }
 
-function Rocket:_init(x, y)
+function Rocket:_init(x, y, angle)
   GameObject:_init()
 
+  self.type = 'rocket'
   self.power = 1000000000
   self.cooldown = 0
   self.driver = nil
@@ -33,6 +34,7 @@ function Rocket:_init(x, y)
   self.height = 52
   self.body = love.physics.newBody(world, x, y, "dynamic")
   self.body:setAngularDamping(0.1)
+  self.body:setAngle(angle or 0)
   self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(16 - 16, 6 - 26, 28 - 16, 40 - 26, 29 - 16, 57 - 26, 2 - 16, 57 - 26, 3 - 16, 40 - 26), 1000000)
   self.fixture:setFriction(1)
   self.fixture:setUserData({ type = 'rocket', data = self })
@@ -55,76 +57,56 @@ function Rocket:_init(x, y)
   return self
 end
 
-timer = 0
 function Rocket:update(dt)
 
   if self.cooldown > 0 then
     self.cooldown = self.cooldown - dt
   end
 
-timer = timer + dt
-local step = 6/60
-if timer > 0 then
-
+  local step = 6/60
   local i
   local x, y = self.body:getPosition()
   local vx, vy = self.body:getLinearVelocity()
 
-  trajectory = {}
+  self.trajectory = {x, y, x, y}
   local damping = 0
-  for i = 1,3600,2 do
-    trajectory[i] = x
-    trajectory[i + 1] = y
+  for i = 3,3600,2 do
+    local hit = false;
+    for _, planet in pairs(planets) do
 
-    local p = planet1
-    local gx, gy = p.body:getLocalPoint(x, y)
-    local radius = p.shape:getRadius() * p.gravityFall
-    local distance = vector.polar(gx, gy) - p.shape:getRadius()
-    local damping = 0
-    if distance <= p.atmosphereSize then
-      damping = p.density
-    end
-    gx, gy = vector.normalize(gx, gy)
-    local a = p.gravity * step * math.pow(radius / (radius + distance), 2)
-    vx = vx + gx * -(a) - vx * damping * step
-    vy = vy + gy * -(a) - vy * damping * step
+      local gx, gy = planet.body:getLocalPoint(x, y)
+      local radius = planet.shape:getRadius() * planet.gravityFall
+      local distance = vector.polar(gx, gy) - planet.shape:getRadius()
+      local damping = 0
+      if distance <= planet.atmosphereSize then
+        damping = planet.density
+      end
+      gx, gy = vector.normalize(gx, gy)
+      local a = planet.gravity * step * math.pow(radius / (radius + distance), 2)
+      vx = vx + gx * -a - vx * damping * step
+      vy = vy + gy * -a - vy * damping * step
 
-    p = planet2
-    local gx, gy = p.body:getLocalPoint(x, y)
-    local radius = p.shape:getRadius() * p.gravityFall
-    local distance = vector.polar(gx, gy) - p.shape:getRadius()
-    local damping = 0
-    if distance <= p.atmosphereSize then
-      damping = p.density
-    end
-    gx, gy = vector.normalize(gx, gy)
-    local a = p.gravity * step * math.pow(radius / (radius + distance), 2)
-    vx = vx + gx * -(a) - vx * damping * step
-    vy = vy + gy * -(a) - vy * damping * step
+      xn, yn, fraction = planet.fixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
+      if xn and yn and fraction then
+        hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
+        self.trajectory[i] = hitx
+        self.trajectory[i + 1] = hity
+        hit = true;
+      end
 
-    xn, yn, fraction = planet1.fixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
-    if xn and yn and fraction then
-      hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
-      trajectory[i] = hitx
-      trajectory[i + 1] = hity
-      break;
     end
-    xn, yn, fraction = planet2.fixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
-    if xn and yn and fraction then
-      hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
-      trajectory[i] = hitx
-      trajectory[i + 1] = hity
+
+    if hit == true then
       break;
     end
 
     x = x + vx * step
     y = y + vy * step
-
+    self.trajectory[i] = x
+    self.trajectory[i + 1] = y
   end
 
-  timer = 0 - timer
-end
-
+  -- INPUTS
   for key, value in pairs(self.inputs) do
     if value == true then
       local functionName = Rocket.actions[key]
@@ -136,35 +118,16 @@ end
 
 end
 
-function Rocket.rayCastCallback(fixture, x, y, xn, yn, fraction)
-
-  if fixture == planet1.fixture or fixture == planet2.fixture then
-    print(fixture)
-    return 0
-  end
-  table.insert(trajectory, x)
-  table.insert(trajectory, y)
-  -- self.trajectory[i + 1] = y
-  return 1
-end
-
 function Rocket:draw()
-  -- love.graphics.setColor(255, 0, 0, 255)
-  -- love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
-
-  -- love.graphics.setLineStyle('rough')
-  -- love.graphics.polygon("line", self.body:getWorldPoints(self.useShape:getPoints()))
-
 
   love.graphics.push()
   love.graphics.translate(self.body:getPosition())
   love.graphics.push()
 
-  -- love.graphics.rotate(self.body:getAngle())
-  local vx, vy = self.body:getLinearVelocity()
-  local s, a = vector.polar(vx, vy)
-  vx, vy = vector.cartesian(100, a)
-  love.graphics.line(0, 0, vx, vy)
+  -- local vx, vy = self.body:getLinearVelocity()
+  -- local s, a = vector.polar(vx, vy)
+  -- vx, vy = vector.cartesian(100, a)
+  -- love.graphics.line(0, 0, vx, vy)
 
   love.graphics.setColor(180, 205, 147);
   love.graphics.rotate(self.body:getAngle())
@@ -173,11 +136,10 @@ function Rocket:draw()
   love.graphics.pop()
   love.graphics.pop()
 
-  if self.driver and table.getn(trajectory) >= 2 then
-    -- love.graphics.setPointSize(2)
+  if self.driver and self.driver == localPlayer then
     love.graphics.setLineWidth(1 / scale)
     love.graphics.setColor(255, 0, 0, 255)
-    love.graphics.line(trajectory)
+    love.graphics.line(self.trajectory)
   end
 
   -- love.graphics.setPointSize(4)

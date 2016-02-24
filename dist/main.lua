@@ -56,7 +56,7 @@ function love.load(args)
 
   world = love.physics.newWorld(0, 0, true)
   world:setCallbacks(beginContact, endContact, preSolve, postSolve)
-  generateEntities()
+  generateWorld()
 
   for k, arg in pairs(args) do
     if arg == '--connect' then
@@ -67,20 +67,26 @@ function love.load(args)
   end
 end
 
-function generateEntities()
+function generateWorld()
   objects = {}
   players = {}
-  planet1 = Planet(0, 2000, 2000, 9.81 * love.physics.getMeter(), 4000, 0.1, 10)
+  planets = {}
+  planet1 = Planet(0, 2000, 2000, 9.81 * love.physics.getMeter(), 3000, 0.1, 10)
   planet2 = Planet(0, -40000, 1000, 5 * love.physics.getMeter(), 2000, 0.01, 10)
   localPlayer = Player(0, -10)
   localPlayer.planet = planet1
   camera.body = localPlayer.body
 
+
+  table.insert(planets, planet1)
+  table.insert(planets, planet2)
+
   table.insert(objects, planet1)
   table.insert(objects, planet2)
   table.insert(objects, localPlayer)
+  -- table.insert(players, localPlayer)
   -- table.insert(objects, Planet(500, -2000, 50, 200))
-  table.insert(objects, Rocket(50, -32))
+  -- table.insert(objects, Rocket(50, -32))
   -- table.insert(objects, Rocket(-920, -50))
   -- table.insert(objects, Rocket(-920, 100))
   -- table.insert(objects, Rocket(-920, -100))

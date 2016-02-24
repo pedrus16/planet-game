@@ -15,6 +15,8 @@ function Server:_init(address)
   self.timer = 0
   self.tickRate = 60
 
+  table.insert(objects, Rocket(50, -32, math.pi))
+
   return self
 end
 
@@ -45,11 +47,18 @@ function Server:handleEvent(event)
     local x, y = player.body:getPosition()
     -- Send the players positions
     local x, y = localPlayer.body:getPosition()
-    event.peer:send(string.format("%s %d %d %d", 'pl', 0, x, y))
+    event.peer:send(string.format("%s %f %f %f", 'pl', 0, x, y))
+    for id, object in pairs(objects) do
+      local x, y = object.body:getPosition()
+      local a = object.body:getAngle()
+      if object.type ~= 'player' then
+        self.host:broadcast(string.format("%s %f %f %f %f", object.type, id, x, y, a))
+      end
+    end
     for id, player in pairs(players) do
       local x, y = player.body:getPosition()
       if id ~= clientID then
-        event.peer:send(string.format("%s %d %d %d", 'pl', id, x, y))
+        event.peer:send(string.format("%s %f %f %f", 'pl', id, x, y))
       end
     end
 
@@ -77,7 +86,7 @@ function Server:sendUpdates()
   if localPlayer.body:isAwake() then
     local x, y = localPlayer.body:getPosition()
     local vX, vY = localPlayer.body:getLinearVelocity()
-    self.host:broadcast(string.format("%s %d %d %d %d %d", 'up2', 0, x, y, vX, vY))
+    self.host:broadcast(string.format("%s %f %f %f %f %f", 'up2', 0, x, y, vX, vY))
   end
   for index,_ in pairs(players) do
     local client = self.host:get_peer(index)
@@ -89,7 +98,16 @@ function Server:sendUpdates()
         if player.body:isAwake() then
           local x, y = player.body:getPosition()
           local vX, vY = player.body:getLinearVelocity()
-          client:send(string.format("%s %d %d %d %d %d", 'up2', id, x, y, vX, vY))
+          client:send(string.format("%s %f %f %f %f %f", 'up2', id, x, y, vX, vY))
+        end
+      end
+
+      for id, object in pairs(objects) do
+        if object.body:isAwake() then
+          local x, y = object.body:getPosition()
+          local vX, vY = object.body:getLinearVelocity()
+          local angle = object.body:getAngle()
+          client:send(string.format("%s %f %f %f %f %f %f", 'up3', id, x, y, vX, vY, angle))
         end
       end
     end

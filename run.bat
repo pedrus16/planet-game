@@ -1,6 +1,6 @@
 @echo off
 start "love1" "C:\Program Files\LOVE\love.exe" --console dist
-#start "love1" "C:\Program Files\LOVE\love.exe" --console dist
+start "love1" "C:\Program Files\LOVE\love.exe" --console dist
 #start "love1" "C:\Program Files\LOVE\love.exe" --console dist
 #start "love1" "C:\Program Files\LOVE\love.exe" --console dist
 #sleep 1
