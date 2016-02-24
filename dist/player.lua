@@ -107,12 +107,21 @@ function Player:update(dt)
     self.jumpCooldown = self.jumpCooldown - dt
   end
 
-  if  not self.drive then
-    for key, value in pairs(self.inputs) do
-      if value == true then
+  for key, value in pairs(self.inputs) do
+    if value == true then
+      if client then
+        client.server:send('action ' .. key)
+      end
+      if self.drive == nil then
         local functionName = Player.actions[key]
-        if functionName ~= nil then
+        if self[functionName] ~= nil then
           self[functionName](self, dt)
+        end
+      else
+        local functionName = Rocket.actions[key]
+        print(functionName, self.drive[functionName])
+        if self.drive[functionName] ~= nil then
+          self.drive[functionName](self.drive, dt)
         end
       end
     end

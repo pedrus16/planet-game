@@ -40,15 +40,15 @@ function Rocket:_init(x, y, angle)
   self.fixture:setUserData({ type = 'rocket', data = self })
   self.shape = self.fixture:getShape()
   self.angle = self.body:getAngle()
-  self.inputs = {
-    move_left = false,
-    move_right = false,
-    move_up = false,
-    move_down = false,
-    use = false,
-    zoom_in = false,
-    zoom_out = false
-  }
+  -- self.inputs = {
+  --   move_left = false,
+  --   move_right = false,
+  --   move_up = false,
+  --   move_down = false,
+  --   use = false,
+  --   zoom_in = false,
+  --   zoom_out = false
+  -- }
   self.spritesheet = love.graphics.newImage("resources/rocket.png")
   self.spritesheet:setFilter("nearest")
   self.sprite = love.graphics.newQuad(2, 6, 28, 52, self.spritesheet:getDimensions())
@@ -107,14 +107,14 @@ function Rocket:update(dt)
   end
 
   -- INPUTS
-  for key, value in pairs(self.inputs) do
-    if value == true then
-      local functionName = Rocket.actions[key]
-      if functionName ~= nil then
-        self[functionName](self, dt)
-      end
-    end
-  end
+  -- for key, value in pairs(self.inputs) do
+  --   if value == true then
+  --     local functionName = Rocket.actions[key]
+  --     if functionName ~= nil then
+  --       self[functionName](self, dt)
+  --     end
+  --   end
+  -- end
 
 end
 
@@ -147,19 +147,19 @@ function Rocket:draw()
   -- love.graphics.points(self.body:getWorldPoint(0, self.height * 0.5))
 end
 
-function Rocket:keypressed(key, scancode, isrepeat)
-  local command = binding[key]
-  if command and self.inputs[command] ~= nil then
-    self.inputs[command] = true
-  end
-end
-
-function Rocket:keyreleased(key, scancode, isrepeat)
-  local command = binding[key]
-  if command and self.inputs[command] ~= nil then
-    self.inputs[command] = false
-  end
-end
+-- function Rocket:keypressed(key, scancode, isrepeat)
+--   local command = binding[key]
+--   if command and self.inputs[command] ~= nil then
+--     self.inputs[command] = true
+--   end
+-- end
+--
+-- function Rocket:keyreleased(key, scancode, isrepeat)
+--   local command = binding[key]
+--   if command and self.inputs[command] ~= nil then
+--     self.inputs[command] = false
+--   end
+-- end
 
 function Rocket:beginContact(a, b, coll)
 end
@@ -168,22 +168,34 @@ function Rocket:endContact(a, b, coll)
 end
 
 function Rocket:moveUp(dt)
+  if client then
+    client.server:send('drive move_up')
+  end
   local x, y = self.body:getWorldCenter(0, self.height * 0.5)
   local fx, fy = vector.cartesian(1, self.body:getAngle() - math.pi * 0.5)
   self.body:applyForce(fx * self.power, fy  * self.power, x, y)
 end
 
 function Rocket:moveDown(dt)
+  if client then
+    client.server:send('drive move_down')
+  end
   local x, y = self.body:getWorldCenter(0, self.height * 0.5)
   local fx, fy = vector.cartesian(1, self.body:getAngle() + math.pi * 0.5)
   self.body:applyForce(fx * self.power, fy  * self.power, x, y)
 end
 
 function Rocket:moveLeft(dt)
+  if client then
+    client.server:send('drive move_left')
+  end
   self.body:applyTorque(-1000000000)
 end
 
 function Rocket:moveRight(dt)
+  if client then
+    client.server:send('drive move_right')
+  end
   self.body:applyTorque(1000000000)
 end
 
@@ -198,6 +210,9 @@ function Rocket:setDriver(driver)
 end
 
 function Rocket:ejectDriver(dt)
+  if client then
+    client.server:send('drive use')
+  end
   if self.cooldown <= 0 and self.driver then
     self.cooldown = 0.4
     self.driver.drive = nil

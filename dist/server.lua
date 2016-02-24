@@ -15,7 +15,8 @@ function Server:_init(address)
   self.timer = 0
   self.tickRate = 60
 
-  table.insert(objects, Rocket(50, -32, math.pi))
+  table.insert(objects, Rocket(50, -32))
+  table.insert(objects, Rocket(-150, -32))
 
   return self
 end
@@ -39,7 +40,7 @@ function Server:handleEvent(event)
 
   if event.type == 'connect' then
 
-    local player = Player(0, 0)
+    local player = Player(0, -10)
     player.planet = planet1
     local clientID = event.peer:index()
     players[clientID] = player
@@ -52,13 +53,13 @@ function Server:handleEvent(event)
       local x, y = object.body:getPosition()
       local a = object.body:getAngle()
       if object.type ~= 'player' then
-        self.host:broadcast(string.format("%s %f %f %f %f", object.type, id, x, y, a))
+        self.host:broadcast(string.format("%s %d %f %f %f", object.type, id, x, y, a))
       end
     end
     for id, player in pairs(players) do
       local x, y = player.body:getPosition()
       if id ~= clientID then
-        event.peer:send(string.format("%s %f %f %f", 'pl', id, x, y))
+        event.peer:send(string.format("%s %d %f %f", 'pl', id, x, y))
       end
     end
 
@@ -70,9 +71,16 @@ function Server:handleEvent(event)
     if cmd == 'action' then
       player = players[tonumber(event.peer:index())]
       if player and player.inputs[params] ~= nil then
-        local functionName = Player.actions[params]
-        if functionName ~= nil then
-          player[functionName](player, dt)
+        if player.drive == nil then
+          local functionName = Player.actions[params]
+          if functionName ~= nil then
+            player[functionName](player, dt)
+          end
+        else
+          local functionName = Rocket.actions[params]
+          if functionName ~= nil then
+            player.drive[functionName](player.drive, dt)
+          end
         end
       end
     end
@@ -98,7 +106,7 @@ function Server:sendUpdates()
         if player.body:isAwake() then
           local x, y = player.body:getPosition()
           local vX, vY = player.body:getLinearVelocity()
-          client:send(string.format("%s %f %f %f %f %f", 'up2', id, x, y, vX, vY))
+          client:send(string.format("%s %d %f %f %f %f", 'up2', id, x, y, vX, vY))
         end
       end
 
@@ -107,7 +115,7 @@ function Server:sendUpdates()
           local x, y = object.body:getPosition()
           local vX, vY = object.body:getLinearVelocity()
           local angle = object.body:getAngle()
-          client:send(string.format("%s %f %f %f %f %f %f", 'up3', id, x, y, vX, vY, angle))
+          client:send(string.format("%s %d %f %f %f %f %f", 'up3', id, x, y, vX, vY, angle))
         end
       end
     end

@@ -58,7 +58,6 @@ function Client:handleEvent(event)
     elseif cmd == "up3" then
 
       local id, x, y, vX, vY, angle = params:match("^(%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*)$")
-      print(x .. ' ' .. y .. ' ' .. angle)
       if objects[id] ~= nil then
         object = objects[id]
         object.body:setPosition(tonumber(x), tonumber(y))
@@ -77,7 +76,6 @@ function Client:handleEvent(event)
     elseif cmd == 'rocket' then
 
       local id, x, y, angle = params:match("^(%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*)$")
-      print(x .. ' ' .. y .. ' ' .. angle)
       local newRocket = Rocket(tonumber(x), tonumber(y), tonumber(angle))
       objects[id] = newRocket
 
