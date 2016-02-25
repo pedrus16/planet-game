@@ -44,7 +44,6 @@ function love.load(args)
   upload = 0
   download = 0
   ping = 0
-  scale = 1
   backgroundSprite = love.graphics.newImage("resources/space2.png")
   backgroundSprite:setFilter("nearest")
   backgroundSprite:setWrap('repeat', 'repeat')
@@ -165,7 +164,7 @@ function love.draw()
   -- move view to screen center
   love.graphics.push()
   love.graphics.translate(width * 0.5, height * 0.5)
-  love.graphics.scale(scale, scale)
+  love.graphics.scale(localPlayer.zoom, localPlayer.zoom)
 
   -- rotate and move to player angle and position
   -- love.graphics.push()

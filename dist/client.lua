@@ -65,7 +65,7 @@ function Client:handleEvent(event)
         object.body:setLinearVelocity(tonumber(vX), tonumber(vY))
       end
 
-    elseif cmd == 'player' then -- Create a player
+    elseif cmd == 'Player' then -- Create a player
 
       local id, x, y = params:match("^(%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*)$")
       local newPlayer = Player(tonumber(x), tonumber(y))
@@ -73,7 +73,7 @@ function Client:handleEvent(event)
       newPlayer.planet = planet1
       table.insert(objects, newPlayer)
 
-    elseif cmd == 'rocket' then
+    elseif cmd == 'Rocket' then
 
       local id, x, y, angle = params:match("^(%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*) (%-?[%d.e]*)$")
       local newRocket = Rocket(tonumber(x), tonumber(y), tonumber(angle))

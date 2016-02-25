@@ -12,21 +12,9 @@ setmetatable(Rocket, {
   end,
 })
 
--- command = action
-Rocket.actions = {
-  move_left = 'moveLeft',
-  move_right = 'moveRight',
-  move_up = 'moveUp',
-  move_down = 'moveDown',
-  use = 'ejectDriver',
-  zoom_in = 'zoomIn',
-  zoom_out = 'zoomOut',
-}
-
 function Rocket:_init(x, y, angle)
   GameObject:_init()
 
-  self.type = 'rocket'
   self.power = 1000000000
   self.cooldown = 0
   self.driver = nil
@@ -49,6 +37,15 @@ function Rocket:_init(x, y, angle)
   --   zoom_in = false,
   --   zoom_out = false
   -- }
+  self.actions = {
+    move_left = 'moveLeft',
+    move_right = 'moveRight',
+    move_up = 'moveUp',
+    move_down = 'moveDown',
+    use = 'ejectDriver',
+    zoom_in = 'zoomIn',
+    zoom_out = 'zoomOut',
+  }
   self.spritesheet = love.graphics.newImage("resources/rocket.png")
   self.spritesheet:setFilter("nearest")
   self.sprite = love.graphics.newQuad(2, 6, 28, 52, self.spritesheet:getDimensions())
@@ -78,7 +75,7 @@ function Rocket:update(dt)
       local radius = planet.shape:getRadius() * planet.gravityFall
       local distance = vector.polar(gx, gy) - planet.shape:getRadius()
       local damping = 0
-      if distance <= planet.atmosphereSize then
+      if distance <= planet.atmosphereSize - planet.shape:getRadius() then
         damping = planet.density
       end
       gx, gy = vector.normalize(gx, gy)
@@ -137,7 +134,7 @@ function Rocket:draw()
   love.graphics.pop()
 
   if self.driver and self.driver == localPlayer then
-    love.graphics.setLineWidth(1 / scale)
+    love.graphics.setLineWidth(1 / localPlayer.zoom)
     love.graphics.setColor(255, 0, 0, 255)
     love.graphics.line(self.trajectory)
   end
@@ -200,7 +197,7 @@ function Rocket:moveRight(dt)
 end
 
 function Rocket:setDriver(driver)
-  if self.cooldown <= 0 then
+  if self.driver == nil and self.cooldown <= 0 then
     self.cooldown = 0.4
     self.driver = driver
     driver.drive = self
@@ -231,14 +228,18 @@ end
 
 function Rocket:zoomIn(dt)
   self.driver.inputs['zoom_in'] = false
-  if scale <= 16 then
-    scale = scale * 2
+  if self.driver.zoom <= 16 then
+    self.driver.zoom = self.driver.zoom * 2
   end
 end
 
 function Rocket:zoomOut(dt)
   self.driver.inputs['zoom_out'] = false
-  if scale > 0 then
-    scale = scale * 0.5
+  if self.driver.zoom > 0 then
+    self.driver.zoom = self.driver.zoom * 0.5
   end
+end
+
+function Rocket:type()
+  return 'Rocket'
 end

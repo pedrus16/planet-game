@@ -1,5 +1,6 @@
 require "gameObject"
 require "debug"
+local anim8 = require "lib.anim8"
 
 Player = {}
 Player.__index = Player
@@ -13,19 +14,10 @@ setmetatable(Player, {
   end,
 })
 
-Player.actions = {
-  move_left = 'moveLeft',
-  move_right = 'moveRight',
-  jump = 'jump',
-  zoom_in = 'zoomIn',
-  zoom_out = 'zoomOut',
-  use = 'use'
-}
-
 function Player:_init(x, y)
   GameObject._init(self)
 
-  self.type = 'player'
+  self.zoom = 1
   self.x = x
   self.y = y
   self.width = 14
@@ -75,22 +67,30 @@ function Player:_init(x, y)
     jump = false,
     use = false
   }
+  self.actions = {
+    move_left = 'moveLeft',
+    move_right = 'moveRight',
+    jump = 'jump',
+    zoom_in = 'zoomIn',
+    zoom_out = 'zoomOut',
+    use = 'use'
+  }
   self.spritesheet = love.graphics.newImage("resources/mario.png")
   self.spritesheet:setFilter("nearest")
-  self.anim = {
-    stand = love.graphics.newQuad(0, 120, 30, 40, self.spritesheet:getDimensions()),
-    run = {
-      love.graphics.newQuad(30, 120, 30, 40, self.spritesheet:getDimensions()),
-      love.graphics.newQuad(60, 120, 30, 40, self.spritesheet:getDimensions()),
-      love.graphics.newQuad(90, 120, 30, 40, self.spritesheet:getDimensions())
-    },
-    jump = love.graphics.newQuad(120, 120, 30, 40, self.spritesheet:getDimensions())
-  }
-  self.playAnim = self.anim.stand
+  self.grid = anim8.newGrid(30, 40, self.spritesheet:getWidth(), self.spritesheet:getHeight())
+  self.animation = anim8.newAnimation(self.grid:getFrames('2-4', 4), 0.08)
+  -- self.anim = {
+  --   stand = love.graphics.newQuad(0, 120, 30, 40, self.spritesheet:getDimensions()),
+  --   run = {
+  --     love.graphics.newQuad(30, 120, 30, 40, self.spritesheet:getDimensions()),
+  --     love.graphics.newQuad(60, 120, 30, 40, self.spritesheet:getDimensions()),
+  --     love.graphics.newQuad(90, 120, 30, 40, self.spritesheet:getDimensions())
+  --   },
+  --   jump = love.graphics.newQuad(120, 120, 30, 40, self.spritesheet:getDimensions())
+  -- }
+  -- self.playAnim = self.anim.stand
   self.drive = nil
   self.usable = nil
-  POS = self.body:getY()
-  -- print(0)
   return self
 end
 
@@ -102,28 +102,17 @@ function Player:update(dt)
   else
     self.body:setFixedRotation(false)
   end
-  self.playAnim = self.anim.stand
+  -- self.playAnim = self.anim.stand
   if self.jumpCooldown > 0 then
     self.jumpCooldown = self.jumpCooldown - dt
   end
 
-  for key, value in pairs(self.inputs) do
-    if value == true then
+  for input, isDown in pairs(self.inputs) do
+    if isDown == true then
       if client then
-        client.server:send('action ' .. key)
+        client.server:send('action ' .. input)
       end
-      if self.drive == nil then
-        local functionName = Player.actions[key]
-        if self[functionName] ~= nil then
-          self[functionName](self, dt)
-        end
-      else
-        local functionName = Rocket.actions[key]
-        print(functionName, self.drive[functionName])
-        if self.drive[functionName] ~= nil then
-          self.drive[functionName](self.drive, dt)
-        end
-      end
+      self:executeAction(input, dt)
     end
   end
 
@@ -132,12 +121,31 @@ function Player:update(dt)
   end
 
   if self.footContacts <= 0 then
-    self.playAnim = self.anim.jump
+    -- self.playAnim = self.anim.jump
+    self.animation:pauseAtStart()
+  else
+    self.animation:resume()
   end
 
   if self.drive and self.drive.body then
     self.body:setPosition(self.drive.body:getPosition())
     self.body:setAngle(self.drive.body:getAngle())
+  end
+  -- self.animation:update(dt)
+end
+
+function Player:executeAction(key, dt)
+  if self.drive == nil then
+    local functionName = self.actions[key]
+    if self[functionName] ~= nil then
+      self[functionName](self, dt)
+    end
+  else
+    local functionName = self.drive.actions[key]
+    print(functionName, self.drive[functionName])
+    if self.drive[functionName] ~= nil then
+      self.drive[functionName](self.drive, dt)
+    end
   end
 end
 
@@ -152,7 +160,8 @@ function Player:draw()
   love.graphics.push()
   love.graphics.rotate(self.body:getAngle())
   love.graphics.scale(self.direction, 1)
-  love.graphics.draw(self.spritesheet, self.playAnim, 30 * -0.5, 40 * -0.5)
+  self.animation:draw(self.spritesheet, 30 * -0.5, 40 * -0.5)
+  -- love.graphics.draw(self.spritesheet, self.playAnim, 30 * -0.5, 40 * -0.5)
   love.graphics.pop()
   love.graphics.pop()
 end
@@ -224,6 +233,8 @@ function Player:moveLeft(dt)
     self.direction = 1
     if self.footContacts > 0 and self.jumpCooldown <= 0 then
       self.body:setLinearVelocity(vx + tx * self.groundSpeed, vy + ty * self.groundSpeed)
+      print(dt)
+      self.animation:update(dt)
     else
       self.body:applyForce(tx * self.airSpeed, ty * self.airSpeed)
     end
@@ -244,6 +255,8 @@ function Player:moveRight(dt)
     self.direction = -1
     if self.footContacts > 0 and self.jumpCooldown <= 0 then
       self.body:setLinearVelocity(vx + tx * self.groundSpeed, vy + ty * self.groundSpeed)
+      print(dt)
+      self.animation:update(dt)
     else
       self.body:applyForce(tx * self.airSpeed, ty * self.airSpeed)
     end
@@ -260,6 +273,7 @@ end
 
 function Player:jump(dt)
   if self.planet ~= nil then
+    self.animation:pause()
     local power = 1900
     if self.footContacts > 0 and self.jumpCooldown <= 0 and self.jumpReleased then
       if client then
@@ -275,15 +289,15 @@ end
 
 function Player:zoomIn(dt)
     self.inputs['zoom_in'] = false
-    if scale <= 16 then
-      scale = scale * 2
+    if self.zoom <= 16 then
+      self.zoom = self.zoom * 2
     end
 end
 
 function Player:zoomOut(dt)
   self.inputs['zoom_out'] = false
-  if scale > 0 then
-    scale = scale * 0.5
+  if self.zoom > 0 then
+    self.zoom = self.zoom * 0.5
   end
 end
 
@@ -298,4 +312,8 @@ end
 
 function Player:_getPlanetDirection()
   return vector.normalize(self.planet.body:getLocalPoint(self.body:getPosition()))
+end
+
+function Player:type()
+  return 'Player'
 end

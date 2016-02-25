@@ -52,8 +52,8 @@ function Server:handleEvent(event)
     for id, object in pairs(objects) do
       local x, y = object.body:getPosition()
       local a = object.body:getAngle()
-      if object.type ~= 'player' then
-        self.host:broadcast(string.format("%s %d %f %f %f", object.type, id, x, y, a))
+      if object:type() ~= 'Player' then
+        self.host:broadcast(string.format("%s %d %f %f %f", object:type(), id, x, y, a))
       end
     end
     for id, player in pairs(players) do
@@ -67,25 +67,11 @@ function Server:handleEvent(event)
 
   if event.type == 'receive' then
 
-    cmd, params = event.data:match("^(%S*) (.*)")
+    cmd, input = event.data:match("^(%S*) (.*)")
     if cmd == 'action' then
       player = players[tonumber(event.peer:index())]
-      if player and player.inputs[params] ~= nil then
-        if player.drive == nil then
-          local functionName = Player.actions[params]
-          if functionName ~= nil then
-            if player[functionName] ~= nil then
-              player[functionName](player, dt)
-            end
-          end
-        else
-          local functionName = Rocket.actions[params]
-          if functionName ~= nil then
-            if player.drive[functionName] ~= nil then
-              player.drive[functionName](player.drive, dt)
-            end
-          end
-        end
+      if player and player.inputs[input] ~= nil then
+        player:executeAction(input, 0)
       end
     end
 

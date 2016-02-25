@@ -125,3 +125,7 @@ function Planet:endContact(a, b, coll)
     a:getBody():setLinearDamping(0)
   end
 end
+
+function Planet:type()
+  return 'Planet'
+end
