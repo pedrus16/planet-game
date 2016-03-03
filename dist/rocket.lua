@@ -72,10 +72,10 @@ function Rocket:update(dt)
     for _, planet in pairs(planets) do
 
       local gx, gy = planet.body:getLocalPoint(x, y)
-      local radius = planet.shape:getRadius() * planet.gravityFall
-      local distance = vector.polar(gx, gy) - planet.shape:getRadius()
+      local radius = planet.radius * planet.gravityFall
+      local distance = vector.polar(gx, gy) - planet.radius
       local damping = 0
-      if distance <= planet.atmosphereSize - planet.shape:getRadius() then
+      if distance <= planet.atmosphereSize - planet.radius then
         damping = planet.density
       end
       gx, gy = vector.normalize(gx, gy)
@@ -117,6 +117,12 @@ end
 
 function Rocket:draw()
 
+  if self.driver and self.driver == localPlayer then
+    love.graphics.setLineWidth(1 / localPlayer.zoom)
+    love.graphics.setColor(255, 0, 0, 255)
+    love.graphics.line(self.trajectory)
+  end
+
   love.graphics.push()
   love.graphics.translate(self.body:getPosition())
   love.graphics.push()
@@ -132,12 +138,6 @@ function Rocket:draw()
 
   love.graphics.pop()
   love.graphics.pop()
-
-  if self.driver and self.driver == localPlayer then
-    love.graphics.setLineWidth(1 / localPlayer.zoom)
-    love.graphics.setColor(255, 0, 0, 255)
-    love.graphics.line(self.trajectory)
-  end
 
   -- love.graphics.setPointSize(4)
   -- love.graphics.setColor(255, 0, 0, 255)
