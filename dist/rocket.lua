@@ -31,13 +31,15 @@ function Rocket:_init(x, y, angle)
 
   self.smoke = love.graphics.newImage("resources/smoke.png")
   self.smoke:setFilter("nearest")
-  self.effect = love.graphics.newParticleSystem(self.smoke, 200)
-  self.effect:setParticleLifetime(5) -- Particles live at least 2s and at most 5s.
-  self.effect:setEmissionRate(40)
+  self.effect = love.graphics.newParticleSystem(self.smoke, 400)
+  self.effect:setParticleLifetime(2) -- Particles live at least 2s and at most 5s.
+  self.effect:setEmissionRate(100)
   self.effect:setSizeVariation(1)
-  self.effect:setLinearAcceleration(-10, -10, 10, 10) -- Random movement in all directions.
-  self.effect:setColors(255, 255, 255, 255, 255, 255, 255, 0) -- Fade to transparency.
-  -- self.effect:setSpin(-math.pi * 2, math.pi * 2);
+  self.effect:setColors(255, 255, 255, 0, 255, 255, 255, 255, 255, 255, 255, 0) -- Fade to transparency.
+  self.effect:setSpeed(100, 150)
+  self.effect:setSpread(math.pi * 0.175)
+  self.effect:setInsertMode('bottom')
+  self.effect:stop()
 
   self.actions = {
     move_left = 'moveLeft',
@@ -107,10 +109,12 @@ function Rocket:update(dt)
 
   -- self.effect:setRotation(self.body:getAngle() - math.pi * 2, self.body:getAngle() + math.pi * 2)
   self.effect:setRotation(self.body:getAngle(), self.body:getAngle())
-  local x, y = vector.cartesian(40, self.body:getAngle() + math.pi * 0.5)
-  self.effect:setPosition(self.body:getX() + x, self.body:getY() + y)
+  self.effect:setDirection(self.body:getAngle() + math.pi * 0.5)
+  local x, y = vector.cartesian(30, self.body:getAngle() + math.pi * 0.5)
+  self.effect:moveTo(self.body:getX() + x, self.body:getY() + y)
 
   self.effect:update(dt)
+  self.effect:stop()
 
 end
 
@@ -123,6 +127,7 @@ function Rocket:draw()
   end
 
   love.graphics.draw(self.effect, 0, 0)
+
   love.graphics.push()
   love.graphics.translate(self.body:getPosition())
   love.graphics.push()
@@ -143,20 +148,6 @@ function Rocket:draw()
   -- love.graphics.points(self.body:getWorldPoint(0, self.height * 0.5))
 end
 
--- function Rocket:keypressed(key, scancode, isrepeat)
---   local command = binding[key]
---   if command and self.inputs[command] ~= nil then
---     self.inputs[command] = true
---   end
--- end
---
--- function Rocket:keyreleased(key, scancode, isrepeat)
---   local command = binding[key]
---   if command and self.inputs[command] ~= nil then
---     self.inputs[command] = false
---   end
--- end
-
 function Rocket:beginContact(a, b, coll)
 end
 
@@ -170,6 +161,7 @@ function Rocket:moveUp(dt)
   local x, y = self.body:getWorldCenter(0, self.height * 0.5)
   local fx, fy = vector.cartesian(1, self.body:getAngle() - math.pi * 0.5)
   self.body:applyForce(fx * self.power, fy  * self.power, x, y)
+  self.effect:start()
 end
 
 function Rocket:moveDown(dt)
