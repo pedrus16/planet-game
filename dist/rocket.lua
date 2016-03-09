@@ -28,15 +28,17 @@ function Rocket:_init(x, y, angle)
   self.fixture:setUserData({ type = 'rocket', data = self })
   self.shape = self.fixture:getShape()
   self.angle = self.body:getAngle()
-  -- self.inputs = {
-  --   move_left = false,
-  --   move_right = false,
-  --   move_up = false,
-  --   move_down = false,
-  --   use = false,
-  --   zoom_in = false,
-  --   zoom_out = false
-  -- }
+
+  self.smoke = love.graphics.newImage("resources/smoke.png")
+  self.smoke:setFilter("nearest")
+  self.effect = love.graphics.newParticleSystem(self.smoke, 200)
+  self.effect:setParticleLifetime(5) -- Particles live at least 2s and at most 5s.
+  self.effect:setEmissionRate(40)
+  self.effect:setSizeVariation(1)
+  self.effect:setLinearAcceleration(-10, -10, 10, 10) -- Random movement in all directions.
+  self.effect:setColors(255, 255, 255, 255, 255, 255, 255, 0) -- Fade to transparency.
+  -- self.effect:setSpin(-math.pi * 2, math.pi * 2);
+
   self.actions = {
     move_left = 'moveLeft',
     move_right = 'moveRight',
@@ -103,26 +105,24 @@ function Rocket:update(dt)
     self.trajectory[i + 1] = y
   end
 
-  -- INPUTS
-  -- for key, value in pairs(self.inputs) do
-  --   if value == true then
-  --     local functionName = Rocket.actions[key]
-  --     if functionName ~= nil then
-  --       self[functionName](self, dt)
-  --     end
-  --   end
-  -- end
+  -- self.effect:setRotation(self.body:getAngle() - math.pi * 2, self.body:getAngle() + math.pi * 2)
+  self.effect:setRotation(self.body:getAngle(), self.body:getAngle())
+  local x, y = vector.cartesian(40, self.body:getAngle() + math.pi * 0.5)
+  self.effect:setPosition(self.body:getX() + x, self.body:getY() + y)
+
+  self.effect:update(dt)
 
 end
 
 function Rocket:draw()
 
+  love.graphics.setColor(180, 205, 147);
   if self.driver and self.driver == localPlayer then
     love.graphics.setLineWidth(1 / localPlayer.zoom)
-    love.graphics.setColor(255, 0, 0, 255)
-    love.graphics.line(self.trajectory)
+    love.graphics.points(self.trajectory)
   end
 
+  love.graphics.draw(self.effect, 0, 0)
   love.graphics.push()
   love.graphics.translate(self.body:getPosition())
   love.graphics.push()
@@ -132,7 +132,6 @@ function Rocket:draw()
   -- vx, vy = vector.cartesian(100, a)
   -- love.graphics.line(0, 0, vx, vy)
 
-  love.graphics.setColor(180, 205, 147);
   love.graphics.rotate(self.body:getAngle())
   love.graphics.draw(self.spritesheet, self.sprite, 30 * -0.5, 40 * -0.5)
 
