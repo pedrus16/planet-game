@@ -21,9 +21,9 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFal
   self.density = density or 0
   self.gravity = gravity or 9.81 * love.physics.getMeter()
   self.body = love.physics.newBody(world, x, y)
-  self.fixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius), 0)
-  self.fixture:setSensor(true)
-  self.fixture:setCategory(2)
+  -- self.fixture = love.physics.newFixture(self.body, love.physics.newCircleShape(radius), 0)
+  -- self.fixture:setSensor(true)
+  -- self.fixture:setCategory(2)
   -- self.fixture:setFriction(1)
   self.atmosphereFixture = love.physics.newFixture(self.body, love.physics.newCircleShape(self.atmosphereSize), 0)
   self.atmosphereFixture:setSensor(true)
@@ -57,25 +57,20 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFal
     },
   }
   local segments = 128
-  for i = 0, segments,1 do
+  points = {}
+  for i = 0, segments - 1,2 do
     local angle = (2 * math.pi / segments) * i
     local angle2 = (2 * math.pi / segments) * (i + 1)
-    table.insert(vertices, {
-      radius * math.cos(angle), radius * math.sin(angle), -- position of the vertex
-      0.042, 0.076, -- texture coordinate at the vertex position
-      255, 255, 255, -- color of the vertex
-    })
-    table.insert(vertices, {
-      radius * math.cos(angle2), radius * math.sin(angle2), -- position of the vertex
-      0.079, 0.076, -- texture coordinate at the vertex position
-      255, 255, 255, -- color of the vertex
-    })
     local x1, y1 = radius * math.cos(angle), radius * math.sin(angle)
     local x2, y2 = radius * math.cos(angle2), radius * math.sin(angle2)
-    love.physics.newFixture(self.body, love.physics.newEdgeShape(x1, y1, x2, y2), 0)
+    table.insert(points, x1)
+    table.insert(points, y1)
+    table.insert(points, x2)
+    table.insert(points, y2)
   end
-  for i = 0, segments, 1 do
-  end
+
+  self.fixture = love.physics.newFixture(self.body, love.physics.newChainShape(true, points), 0)
+  self.fixture:setFriction(1)
 
   local segments = math.ceil((self.atmosphereFixture:getShape():getRadius() + 16) * 2 * math.pi / 16)
   for i = 0, segments - 1,1 do
@@ -109,11 +104,19 @@ function Planet:draw()
   -- love.graphics.circle("line", self.body:getX(), self.body:getY(), self.atmosphereFixture:getShape():getRadius() + 15)
   -- love.graphics.setColor(180, 205, 147, 64)
   -- love.graphics.circle("line", self.body:getX(), self.body:getY(), self.atmosphereFixture:getShape():getRadius() + 5)
+
   love.graphics.setColor(180, 205, 147, 128)
   love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.atmosphereFixture:getShape():getRadius())
   love.graphics.draw(self.atmosphereBatch, self.body:getX(), self.body:getY())
   love.graphics.setColor(colorLightGreen())
   love.graphics.draw(self.mesh, self.body:getX(), self.body:getY())
+  -- love.graphics.setColor(255, 0, 255, 255)
+  love.graphics.push()
+  love.graphics.translate(self.body:getX(), self.body:getY())
+  love.graphics.setLineWidth(1 / localPlayer.zoom)
+  love.graphics.line(self.fixture:getShape():getPoints())
+  love.graphics.pop()
+
   -- love.graphics.circle("line", self.body:getX(), self.body:getY(), self.radius)
   -- love.graphics.draw(self.batch, self.body:getX(), self.body:getY())
   -- love.graphics.setLineWidth(4)

@@ -32,11 +32,12 @@ function Rocket:_init(x, y, angle)
   self.smoke = love.graphics.newImage("resources/smoke.png")
   self.smoke:setFilter("nearest")
   self.effect = love.graphics.newParticleSystem(self.smoke, 400)
-  self.effect:setParticleLifetime(2) -- Particles live at least 2s and at most 5s.
+  self.effect:setParticleLifetime(0.5, 1.5) -- Particles live at least 2s and at most 5s.
   self.effect:setEmissionRate(100)
   self.effect:setSizeVariation(1)
-  self.effect:setColors(255, 255, 255, 0, 255, 255, 255, 255, 255, 255, 255, 0) -- Fade to transparency.
-  self.effect:setSpeed(100, 150)
+  self.effect:setColors(255, 255, 255, 255) -- Fade to transparency.
+  self.effect:setSpeed(300, 400)
+  self.effect:setLinearDamping(1, 2)
   self.effect:setSpread(math.pi * 0.175)
   self.effect:setInsertMode('bottom')
   self.effect:stop()
@@ -110,7 +111,7 @@ function Rocket:update(dt)
   -- self.effect:setRotation(self.body:getAngle() - math.pi * 2, self.body:getAngle() + math.pi * 2)
   self.effect:setRotation(self.body:getAngle(), self.body:getAngle())
   self.effect:setDirection(self.body:getAngle() + math.pi * 0.5)
-  local x, y = vector.cartesian(30, self.body:getAngle() + math.pi * 0.5)
+  local x, y = vector.cartesian(35, self.body:getAngle() + math.pi * 0.5)
   self.effect:moveTo(self.body:getX() + x, self.body:getY() + y)
 
   self.effect:update(dt)
@@ -123,7 +124,7 @@ function Rocket:draw()
   love.graphics.setColor(180, 205, 147);
   if self.driver and self.driver == localPlayer then
     love.graphics.setLineWidth(1 / localPlayer.zoom)
-    love.graphics.points(self.trajectory)
+    love.graphics.line(self.trajectory)
   end
 
   love.graphics.draw(self.effect, 0, 0)
