@@ -144,7 +144,14 @@ function love.update(dt)
     local x = localPlayer.body:getX() - planet1.body:getX() + love.mouse.getX() - width * 0.5
     local y = localPlayer.body:getY() - planet1.body:getY() + love.mouse.getY() - height * 0.5
     print(planet1.body:getX(), planet1.body:getY())
-    planet1:dig(x, y, 12)
+    planet1:dig(x, y, 20)
+  end
+
+  if love.mouse.isDown(2) then
+    local x = localPlayer.body:getX() - planet1.body:getX() + love.mouse.getX() - width * 0.5
+    local y = localPlayer.body:getY() - planet1.body:getY() + love.mouse.getY() - height * 0.5
+    print(planet1.body:getX(), planet1.body:getY())
+    planet1:fill(x, y, 20)
   end
 
 end

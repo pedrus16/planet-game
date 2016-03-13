@@ -107,6 +107,34 @@ function Planet:dig(x, y, radius)
   end
 end
 
+function Planet:fill(x, y, radius)
+  local hole = clipper.polygon()
+  local segments = 16
+  for i = 0, segments -1,2 do
+    local angle = (2 * math.pi / segments) * i
+    local angle2 = (2 * math.pi / segments) * (i + 1)
+    local x1, y1 = radius * math.cos(angle), radius * math.sin(angle)
+    local x2, y2 = radius * math.cos(angle2), radius * math.sin(angle2)
+    hole:add((x + x1) * 1000, (y + y1) * 1000)
+    hole:add((x + x2) * 1000, (y + y2) * 1000)
+  end
+  local cl = clipper.new()
+  cl:add_subject(self.polygons)
+  cl:add_clip(hole)
+  self.polygons = cl:execute('union'):clean(100)
+  for _, fixture in pairs(self.fixtures) do
+    fixture:destroy()
+  end
+  local size = self.polygons:size()
+  self.fixtures = {}
+  for i = 1, size, 1 do
+    if self.polygons:get(i):size() > 2 then
+      self.fixtures[i] = love.physics.newFixture(self.body, love.physics.newChainShape(false, getPoints(self.polygons:get(i))), 0)
+      self.fixtures[i]:setFriction(1)
+    end
+  end
+end
+
 function getPoints(polygon)
   local size = polygon:size()
   local points = {}
