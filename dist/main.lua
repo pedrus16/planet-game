@@ -140,6 +140,20 @@ function love.update(dt)
     client:update(dt)
   end
 
+  if love.mouse.isDown(1) then
+    local x = localPlayer.body:getX() - planet1.body:getX() + love.mouse.getX() - width * 0.5
+    local y = localPlayer.body:getY() - planet1.body:getY() + love.mouse.getY() - height * 0.5
+    print(planet1.body:getX(), planet1.body:getY())
+    planet1:dig(x, y, 12)
+  end
+
+end
+
+function love.mousepressed(x, y, button, istouch)
+  -- local x = localPlayer.body:getX() - planet1.body:getX() + love.mouse.getX() - width * 0.5
+  -- local y = localPlayer.body:getY() - planet1.body:getY() + love.mouse.getY() - height * 0.5
+  -- print(planet1.body:getX(), planet1.body:getY())
+  -- planet1:dig(x, y, 10)
 end
 
 function love.keypressed(key, scancode, isrepeat)

@@ -88,18 +88,31 @@ function Rocket:update(dt)
       vx = vx + gx * -a - vx * damping * step
       vy = vy + gy * -a - vy * damping * step
 
-      xn, yn, fraction = planet.fixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
-      if xn and yn and fraction then
-        hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
-        self.trajectory[i] = hitx
-        self.trajectory[i + 1] = hity
-        hit = true;
+      -- if hit == false then
+    -- end
+
+      for _, fixture in pairs(planet.fixtures) do
+        hit = fixture:testPoint(x + vx * step, y + vy * step)
+        if hit == true then
+          break
+        end
+      --   xn, yn, fraction = fixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
+      --   if xn and yn and fraction then
+      --     hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
+      --     self.trajectory[i] = hitx
+      --     self.trajectory[i + 1] = hity
+      --     hit = true;
+      --   end
+      end
+
+      if hit == true then
+        break
       end
 
     end
 
     if hit == true then
-      break;
+      break
     end
 
     x = x + vx * step
