@@ -24,7 +24,6 @@ function colorDark()
   return 64, 63, 63
 end
 
-
 function love.load(args)
   love.graphics.setLineStyle('rough')
   love.physics.setMeter(20)

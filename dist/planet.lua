@@ -47,7 +47,7 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFal
   self.batch:flush()
 
   local radius = self.radius
-  local segments = 256
+  local segments = 16
   self.polygons = clipper.polygons()
   self.polygons:add(clipper.polygon())
   local points = {}
@@ -62,11 +62,36 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFal
 
   local size = self.polygons:size()
   self.fixtures = {}
-  -- self:dig(0, -2000, 5)
   for i = 1, size, 1 do
     self.fixtures[i] = love.physics.newFixture(self.body, love.physics.newChainShape(false, getPoints(self.polygons:get(i))), 0)
     self.fixtures[i]:setFriction(1)
   end
+
+  self.triangles = love.math.triangulate(getPoints(self.polygons:get(1)))
+  self.canvas = love.graphics.newCanvas(self.radius * 2, self.radius * 2)
+  love.graphics.setCanvas(self.canvas)
+  love.graphics.clear(255, 255, 255)
+  love.graphics.setCanvas()
+  self.mask_shader = love.graphics.newShader[[
+     vec4 effect(vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
+        if (Texel(texture, texture_coords).rgb == vec3(0.0)) {
+           // a discarded pixel wont be applied as the stencil.
+           discard;
+        }
+        return vec4(1.0);
+     }
+  ]]
+
+  -- love.graphics.setCanvas(self.canvas)
+  -- for _, triangle in pairs(self.triangles) do
+  --   love.graphics.push()
+  --   love.graphics.translate(self.radius, self.radius)
+  --   love.graphics.polygon('fill', triangle)
+  --   love.graphics.pop()
+  -- end
+  -- love.graphics.setCanvas()
+
+
 
   local segments = math.ceil((self.atmosphereFixture:getShape():getRadius() + 16) * 2 * math.pi / 16)
   for i = 0, segments - 1,1 do
@@ -80,6 +105,8 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFal
 end
 
 function Planet:dig(x, y, radius)
+
+
   local hole = clipper.polygon()
   local segments = 16
   for i = 0, segments -1,2 do
@@ -90,6 +117,16 @@ function Planet:dig(x, y, radius)
     hole:add((x + x1) * 1000, (y + y1) * 1000)
     hole:add((x + x2) * 1000, (y + y2) * 1000)
   end
+
+  love.graphics.setCanvas(self.canvas)
+  -- love.graphics.rectangle("fill", 0, 0, 350, 300)
+  love.graphics.push()
+  love.graphics.translate(self.radius, self.radius)
+  love.graphics.setColor(0, 0, 0, 255)
+  love.graphics.circle('fill', x, y, radius, segments)
+  love.graphics.pop()
+  love.graphics.setCanvas()
+
   local cl = clipper.new()
   cl:add_subject(self.polygons)
   cl:add_clip(hole)
@@ -170,7 +207,6 @@ function Planet:draw()
   -- love.graphics.circle("line", self.body:getX(), self.body:getY(), self.atmosphereFixture:getShape():getRadius() + 15)
   -- love.graphics.setColor(180, 205, 147, 64)
   -- love.graphics.circle("line", self.body:getX(), self.body:getY(), self.atmosphereFixture:getShape():getRadius() + 5)
-
   love.graphics.setColor(180, 205, 147, 128)
   love.graphics.circle("fill", self.body:getX(), self.body:getY(), self.atmosphereFixture:getShape():getRadius())
   love.graphics.draw(self.atmosphereBatch, self.body:getX(), self.body:getY())
@@ -181,10 +217,25 @@ function Planet:draw()
   love.graphics.translate(self.body:getX(), self.body:getY())
   love.graphics.setLineWidth(1 / localPlayer.zoom)
 
-  local size = self.polygons:size()
-  for _, fixture in pairs(self.fixtures) do
-    love.graphics.line(fixture:getShape():getPoints())
+  -- local size = self.polygons:size()
+  -- for i = 1, size, 1 do
+  --   if self.polygons:get(i):size() > 2 then
+  --     love.graphics.line(getPoints(self.polygons:get(i)))
+  --   end
+  -- end
+
+  -- love.graphics.draw(self.canvas, -self.radius, -self.radius)
+  local function myStencilFunction()
+    love.graphics.setShader(self.mask_shader)
+    love.graphics.draw(self.canvas, -self.radius, -self.radius)
+    love.graphics.setShader()
   end
+  love.graphics.stencil(myStencilFunction, "replace", 1)
+  love.graphics.setStencilTest("greater", 0)
+  for _, triangle in pairs(self.triangles) do
+    love.graphics.polygon('fill', triangle)
+  end
+  love.graphics.setStencilTest()
 
   love.graphics.pop()
 

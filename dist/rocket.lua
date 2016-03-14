@@ -92,17 +92,21 @@ function Rocket:update(dt)
     -- end
 
       for _, fixture in pairs(planet.fixtures) do
-        hit = fixture:testPoint(x + vx * step, y + vy * step)
-        if hit == true then
+        -- xn, yn, fraction = fixture:testPoint(x, y, x + vx * step, y + vy * step, 1)
+        -- -- hit = fixture:testPoint(0, 0, 0, 0, -1000)
+        -- print(hit)
+        -- if hit == true then
+        --   break
+        -- end
+        -- TODO Loop through chain children and raycast each of them
+        xn, yn, fraction = fixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
+        if xn and yn and fraction then
+          hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
+          self.trajectory[i] = hitx
+          self.trajectory[i + 1] = hity
+          hit = true
           break
         end
-      --   xn, yn, fraction = fixture:rayCast(x, y, x + vx * step, y + vy * step, 1)
-      --   if xn and yn and fraction then
-      --     hitx, hity = x + (x + vx * step - x) * fraction, y + (y + vy * step - y) * fraction
-      --     self.trajectory[i] = hitx
-      --     self.trajectory[i + 1] = hity
-      --     hit = true;
-      --   end
       end
 
       if hit == true then
