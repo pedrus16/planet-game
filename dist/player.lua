@@ -142,7 +142,6 @@ function Player:executeAction(key, dt)
     end
   else
     local functionName = self.drive.actions[key]
-    print(functionName, self.drive[functionName])
     if self.drive[functionName] ~= nil then
       self.drive[functionName](self.drive, dt)
     end
@@ -233,7 +232,6 @@ function Player:moveLeft(dt)
     self.direction = 1
     if self.footContacts > 0 and self.jumpCooldown <= 0 then
       self.body:setLinearVelocity(vx + tx * self.groundSpeed, vy + ty * self.groundSpeed)
-      print(dt)
       self.animation:update(dt)
     else
       self.body:applyForce(tx * self.airSpeed, ty * self.airSpeed)
@@ -255,7 +253,6 @@ function Player:moveRight(dt)
     self.direction = -1
     if self.footContacts > 0 and self.jumpCooldown <= 0 then
       self.body:setLinearVelocity(vx + tx * self.groundSpeed, vy + ty * self.groundSpeed)
-      print(dt)
       self.animation:update(dt)
     else
       self.body:applyForce(tx * self.airSpeed, ty * self.airSpeed)

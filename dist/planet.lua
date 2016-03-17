@@ -34,7 +34,7 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFal
   self.spritesheet = love.graphics.newImage("resources/rock.png")
   self.spritesheet:setWrap('repeat', 'repeat')
   self.spritesheet:setFilter("nearest")
-  self.sprite = love.graphics.newQuad(0, 0, self.radius * 2, self.radius * 2, self.spritesheet:getDimensions())
+  self.sprite = love.graphics.newQuad(0, 0, self.atmosphereSize * 2, self.atmosphereSize * 2, self.spritesheet:getDimensions())
   self.spriteAtmosphere = love.graphics.newQuad(70, 191, 16, 16, self.spritesheet:getDimensions())
   self.batch = love.graphics.newSpriteBatch(self.spritesheet, 10000)
   self.atmosphereBatch = love.graphics.newSpriteBatch(self.spritesheet, 10000)
@@ -46,19 +46,9 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFal
   end
   self.batch:flush()
 
-  local radius = self.radius
-  local segments = 256
   self.polygons = clipper.polygons()
   self.polygons:add(clipper.polygon())
-  local points = {}
-  for i = 0, segments -1,2 do
-    local angle = (2 * math.pi / segments) * i
-    local angle2 = (2 * math.pi / segments) * (i + 1)
-    local x1, y1 = radius * math.cos(angle), radius * math.sin(angle)
-    local x2, y2 = radius * math.cos(angle2), radius * math.sin(angle2)
-    self.polygons:get(1):add(x1 * 1000, y1 * 1000)
-    self.polygons:get(1):add(x2 * 1000, y2 * 1000)
-  end
+  self:generateRelief(1024, self.radius * 2, 500, 0.7)
 
   local size = self.polygons:size()
   self.fixtures = {}
@@ -68,11 +58,11 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFal
   end
 
   self.triangles = love.math.triangulate(getPoints(self.polygons:get(1)))
-  self.mask = love.graphics.newCanvas(self.radius * 2, self.radius * 2)
+  self.mask = love.graphics.newCanvas(self.atmosphereSize * 2, self.atmosphereSize * 2)
   love.graphics.setCanvas(self.mask)
   love.graphics.clear(0, 0, 0)
   love.graphics.push()
-  love.graphics.translate(self.radius, self.radius)
+  love.graphics.translate(self.atmosphereSize, self.atmosphereSize)
   for _, triangle in pairs(self.triangles) do
     love.graphics.setColor(255, 255, 255)
     love.graphics.polygon('fill', triangle)
@@ -88,15 +78,11 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFal
         return vec4(1.0);
      }
   ]]
-  self.canvas = love.graphics.newCanvas(self.radius * 2, self.radius * 2)
+  self.canvas = love.graphics.newCanvas(self.atmosphereSize * 2, self.atmosphereSize * 2)
   self.canvas:setFilter('nearest')
   love.graphics.setCanvas(self.canvas)
   love.graphics.setColor(255,255,255)
   love.graphics.draw(self.spritesheet, self.sprite, 0, 0)
-  love.graphics.setColor(colorDark())
-  love.graphics.setLineWidth(2)
-  love.graphics.circle('line', self.radius, self.radius, self.radius, segments)
-  love.graphics.setLineWidth(1)
   love.graphics.setCanvas()
 
   local segments = math.ceil((self.atmosphereFixture:getShape():getRadius() + 16) * 2 * math.pi / 16)
@@ -104,14 +90,39 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFal
     self.atmosphereBatch:add(self.spriteAtmosphere, 0, 0, math.rad(i * (360 / segments)), 1, 1, 8, self.atmosphereFixture:getShape():getRadius() + 16)
   end
   self.atmosphereBatch:flush()
-  -- self.mesh = love.graphics.newMesh(vertices, 'fan', 'static')
-  -- self.mesh:setTexture(self.spritesheet)
 
   return self
 end
 
-function Planet:dig(x, y, radius)
+function Planet:generateRelief(width, height, displace, roughness)
+  local points = {}
+  local power = math.pow(2, math.ceil(math.log(width) / math.log(2)))
+  local rdm = love.math.random()
+  points[1] = height * 0.5 + (rdm * displace * 2) - displace
+  points[power + 1] = height * 0.5 + (rdm * displace * 2) - displace
+  displace = displace * roughness
+  local i = 1
+  while i < power do
+    local j = (power / i) / 2
+    while j < power do
+      points[j + 1] = (points[j - (power / i) / 2 + 1] + points[j + (power / i) / 2 + 1]) / 2
+      points[j + 1] = points[j + 1] + love.math.random() * displace * 2 - displace
+      j = j + power / i
+    end
+    displace = displace * roughness
+    i = i * 2
+  end
+  for i = 1, power, 2 do
+      local angle = (2 * math.pi / width) * (i - 1)
+      local angle2 = (2 * math.pi / width) * i
+      local x1, y1 = points[i] * math.cos(angle), points[i] * math.sin(angle)
+      local x2, y2 = points[i + 1] * math.cos(angle2), points[i + 1] * math.sin(angle2)
+      self.polygons:get(1):add(x1 * 1000, y1 * 1000)
+      self.polygons:get(1):add(x2 * 1000, y2 * 1000)
+  end
+end
 
+function Planet:dig(x, y, radius)
 
   local hole = clipper.polygon()
   local segments = 16
@@ -126,7 +137,7 @@ function Planet:dig(x, y, radius)
 
   love.graphics.setCanvas(self.mask)
   love.graphics.push()
-  love.graphics.translate(self.radius, self.radius)
+  love.graphics.translate(self.atmosphereSize, self.atmosphereSize)
   love.graphics.setColor(0, 0, 0)
   love.graphics.circle('fill', x, y, radius, segments)
   love.graphics.pop()
@@ -134,7 +145,7 @@ function Planet:dig(x, y, radius)
 
   love.graphics.setCanvas(self.canvas)
   love.graphics.push()
-  love.graphics.translate(self.radius, self.radius)
+  love.graphics.translate(self.atmosphereSize, self.atmosphereSize)
   love.graphics.setColor(colorDark())
   love.graphics.circle('fill', x, y, radius + 1, segments)
   love.graphics.pop()
@@ -171,7 +182,7 @@ function Planet:fill(x, y, radius)
 
   love.graphics.setCanvas(self.mask)
   love.graphics.push()
-  love.graphics.translate(self.radius, self.radius)
+  love.graphics.translate(self.atmosphereSize, self.atmosphereSize)
   love.graphics.setColor(255, 255, 255)
   love.graphics.circle('fill', x, y, radius, segments)
   love.graphics.pop()
@@ -236,12 +247,12 @@ function Planet:draw()
 
   local function myStencilFunction()
     love.graphics.setShader(self.mask_shader)
-    love.graphics.draw(self.mask, -self.radius, -self.radius)
+    love.graphics.draw(self.mask, -self.atmosphereSize, -self.atmosphereSize)
     love.graphics.setShader()
   end
   love.graphics.stencil(myStencilFunction, "replace", 1)
   love.graphics.setStencilTest("greater", 0)
-  love.graphics.draw(self.canvas, -self.radius, -self.radius)
+  love.graphics.draw(self.canvas, -self.atmosphereSize, -self.atmosphereSize)
   love.graphics.setStencilTest()
 
   love.graphics.pop()

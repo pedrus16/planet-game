@@ -56,10 +56,12 @@ function love.load(args)
   world:setCallbacks(beginContact, endContact, preSolve, postSolve)
   generateWorld()
 
-  for k, arg in pairs(args) do
-    if arg == '--connect' then
-      if args[k + 1] then
-        client = Client(args[k + 1])
+  if (args) then
+    for k, arg in pairs(args) do
+      if arg == '--connect' then
+        if args[k + 1] then
+          client = Client(args[k + 1])
+        end
       end
     end
   end
@@ -71,7 +73,7 @@ function generateWorld()
   planets = {}
   planet1 = Planet(0, 2000, 2000, 9.81 * love.physics.getMeter(), 3000, 0.1, 10)
   planet2 = Planet(0, -40000, 1000, 5 * love.physics.getMeter(), 2000, 0.01, 10)
-  localPlayer = Player(0, -10)
+  localPlayer = Player(0, -200)
   localPlayer.planet = planet1
   camera.body = localPlayer.body
 
@@ -142,14 +144,12 @@ function love.update(dt)
   if love.mouse.isDown(1) then
     local x = localPlayer.body:getX() - planet1.body:getX() + love.mouse.getX() - width * 0.5
     local y = localPlayer.body:getY() - planet1.body:getY() + love.mouse.getY() - height * 0.5
-    print(planet1.body:getX(), planet1.body:getY())
     planet1:dig(x, y, 20)
   end
 
   if love.mouse.isDown(2) then
     local x = localPlayer.body:getX() - planet1.body:getX() + love.mouse.getX() - width * 0.5
     local y = localPlayer.body:getY() - planet1.body:getY() + love.mouse.getY() - height * 0.5
-    print(planet1.body:getX(), planet1.body:getY())
     planet1:fill(x, y, 20)
   end
 
