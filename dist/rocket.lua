@@ -78,7 +78,7 @@ function Rocket:update(dt)
 
       local gx, gy = planet.body:getLocalPoint(x, y)
       local radius = planet.radius * planet.gravityFall
-      local distance = vector.polar(gx, gy) - planet.radius
+      local distance = vector.polar2cartesian(gx, gy) - planet.radius
       local damping = 0
       if distance <= planet.atmosphereSize - planet.radius then
         damping = planet.density
@@ -128,7 +128,7 @@ function Rocket:update(dt)
   -- self.effect:setRotation(self.body:getAngle() - math.pi * 2, self.body:getAngle() + math.pi * 2)
   self.effect:setRotation(self.body:getAngle(), self.body:getAngle())
   self.effect:setDirection(self.body:getAngle() + math.pi * 0.5)
-  local x, y = vector.cartesian(35, self.body:getAngle() + math.pi * 0.5)
+  local x, y = vector.cartesian2polar(35, self.body:getAngle() + math.pi * 0.5)
   self.effect:moveTo(self.body:getX() + x, self.body:getY() + y)
 
   self.effect:update(dt)
@@ -151,8 +151,8 @@ function Rocket:draw()
   love.graphics.push()
 
   -- local vx, vy = self.body:getLinearVelocity()
-  -- local s, a = vector.polar(vx, vy)
-  -- vx, vy = vector.cartesian(100, a)
+  -- local s, a = vector.polar2cartesian(vx, vy)
+  -- vx, vy = vector.cartesian2polar(100, a)
   -- love.graphics.line(0, 0, vx, vy)
 
   love.graphics.rotate(self.body:getAngle())
@@ -177,7 +177,7 @@ function Rocket:moveUp(dt)
     client.server:send('drive move_up')
   end
   local x, y = self.body:getWorldCenter(0, self.height * 0.5)
-  local fx, fy = vector.cartesian(1, self.body:getAngle() - math.pi * 0.5)
+  local fx, fy = vector.cartesian2polar(1, self.body:getAngle() - math.pi * 0.5)
   self.body:applyForce(fx * self.power, fy  * self.power, x, y)
   self.effect:start()
 end
@@ -187,7 +187,7 @@ function Rocket:moveDown(dt)
     client.server:send('drive move_down')
   end
   local x, y = self.body:getWorldCenter(0, self.height * 0.5)
-  local fx, fy = vector.cartesian(1, self.body:getAngle() + math.pi * 0.5)
+  local fx, fy = vector.cartesian2polar(1, self.body:getAngle() + math.pi * 0.5)
   self.body:applyForce(fx * self.power, fy  * self.power, x, y)
 end
 

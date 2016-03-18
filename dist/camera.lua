@@ -25,7 +25,7 @@ function Camera:update(dt)
   -- if self.body then
   --   self.x, self.y = self.body:getPosition()
   --   local x, y = self.body:getLinearVelocity()
-  --   local speed, angle = vector.polar(x, y)
+  --   local speed, angle = vector.polar2cartesian(x, y)
   --
   --   if self.mode == 'SPEED' then
   --     self.angle = -angle - math.pi * 0.5

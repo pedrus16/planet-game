@@ -15,8 +15,8 @@ function Server:_init(address)
   self.timer = 0
   self.tickRate = 60
 
-  table.insert(objects, Rocket(50, -32))
-  table.insert(objects, Rocket(-150, -32))
+  -- table.insert(objects, Rocket(50, -32))
+  -- table.insert(objects, Rocket(-150, -32))
 
   return self
 end

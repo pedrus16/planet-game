@@ -239,3 +239,18 @@ function endContact(a, b, coll)
     object:endContact(a, b, coll)
   end
 end
+
+function endContact(a, b, coll)
+  localPlayer:endContact(a, b, coll)
+  for _,object in pairs(objects) do
+    object:endContact(a, b, coll)
+  end
+end
+
+function preSolve(a, b, coll)
+  localPlayer:preSolve(a, b, coll)
+end
+
+function postSolve(a, b, coll)
+  localPlayer:postSolve(a, b, coll)
+end

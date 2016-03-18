@@ -48,7 +48,7 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFal
 
   self.polygons = clipper.polygons()
   self.polygons:add(clipper.polygon())
-  self:generateRelief(1024, self.radius * 2, 500, 0.7)
+  self:generateRelief(1024, self.radius * 2, 100, 0.75)
 
   local size = self.polygons:size()
   self.fixtures = {}
@@ -57,7 +57,10 @@ function Planet:_init(x, y, radius, gravity, atmosphereSize, density, gravityFal
     self.fixtures[i]:setFriction(1)
   end
 
-  self.triangles = love.math.triangulate(getPoints(self.polygons:get(1)))
+  local points = getPoints(self.polygons:get(1))
+ table.insert(points, 1, 0)
+ table.insert(points, 2, 0)
+  self.triangles = love.math.triangulate(points)
   self.mask = love.graphics.newCanvas(self.atmosphereSize * 2, self.atmosphereSize * 2)
   love.graphics.setCanvas(self.mask)
   love.graphics.clear(0, 0, 0)
@@ -225,7 +228,7 @@ function Planet:update(dt)
     if object.body:getMass() > 0 then
       local gx, gy = self.body:getLocalPoint(object.body:getPosition())
       local radius = self.radius * self.gravityFall
-      local distance = vector.polar(gx, gy) - self.radius
+      local distance = vector.polar2cartesian(gx, gy) - self.radius
       gx, gy = vector.normalize(gx, gy)
       local force = object.body:getMass() * self.gravity * math.pow(radius / (radius + distance), 2)
       object.body:applyForce(gx * -force, gy * -force)
@@ -269,7 +272,7 @@ function Planet:draw()
   -- for key, object in pairs(objects) do
   --   local gx, gy = self.body:getLocalPoint(object.body:getPosition())
   --   local radius = self.radius * self.gravityFall
-  --   local distance = vector.polar(gx, gy) - self.radius
+  --   local distance = vector.polar2cartesian(gx, gy) - self.radius
   --   local force = self.gravity * math.pow(radius / (radius + distance), 2)
   --
   --   gx, gy = vector.normalize(gx, gy)

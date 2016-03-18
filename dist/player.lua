@@ -1,5 +1,6 @@
 require "gameObject"
 require "debug"
+require "lib.vector"
 local anim8 = require "lib.anim8"
 
 Player = {}
@@ -28,21 +29,21 @@ function Player:_init(x, y)
   self.body:setFixedRotation(true)
   -- self.body:setLinearDamping(0.1)
   local playerShape = {
-    self.width * 0.5, self.height * 0.5,
-    self.width * -0.5, self.height * 0.5,
-    self.width * -0.5, self.height * -0.5 + 2,
-    self.width * -0.5 + 2, self.height * -0.5,
-    self.width * 0.5 - 2, self.height * -0.5,
-    self.width * 0.5, self.height * -0.5 + 2
+    self.width * -0.5, self.height * -0.5,
+    self.width * 0.5, self.height * -0.5,
+    self.width * 0.5, self.height * 0.5 - 2,
+    self.width * 0.5 - 2, self.height * 0.5,
+    self.width * -0.5 + 2, self.height * 0.5,
+    self.width * -0.5, self.height * 0.5 - 2
   }
 
-  self.fixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, 0, self.width, self.height), 28)
+  self.fixture = love.physics.newFixture(self.body, love.physics.newPolygonShape(playerShape), 28)
   self.fixture:setFriction(1)
   self.fixture:setUserData(self)
   self.shape = self.fixture:getShape()
 
-  self.footFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, self.height * 0.5, self.width * 0.8, 4), 0)
-  self.footFixture:setSensor(true)
+  self.footFixture = love.physics.newFixture(self.body, love.physics.newRectangleShape(0, self.height * 0.5, self.width * 0.7, 2), 0)
+  -- self.footFixture:setSensor(true)
   self.footFixture:setMask(2)
   self.footShape = self.footFixture:getShape()
 
@@ -91,12 +92,22 @@ function Player:_init(x, y)
   -- self.playAnim = self.anim.stand
   self.drive = nil
   self.usable = nil
+
+  self.debugContact = {
+    x1 = 0,
+    y1 = 0,
+    x2 = 0,
+    y2 = 0,
+    tx = 0,
+    ty = 0
+  }
+  self.contact = nil
   return self
 end
 
 function Player:update(dt)
   if self.planet ~= nil then
-    local _, angle = vector.polar(self:_getPlanetDirection())
+    local _, angle = vector.polar2cartesian(self:_getPlanetDirection())
     self.body:setAngle(angle + math.pi * 0.5)
     self.body:setFixedRotation(true)
   else
@@ -131,6 +142,7 @@ function Player:update(dt)
     self.body:setPosition(self.drive.body:getPosition())
     self.body:setAngle(self.drive.body:getAngle())
   end
+
   -- self.animation:update(dt)
 end
 
@@ -149,10 +161,6 @@ function Player:executeAction(key, dt)
 end
 
 function Player:draw()
-  -- love.graphics.setColor(255, 0, 0, 255)
-  -- love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
-  -- love.graphics.setColor(255, 0, 0, 255)
-  -- love.graphics.polygon("line", self.body:getWorldPoints(self.actionShape:getPoints()))
   love.graphics.setColor(180, 205, 147, 255)
   love.graphics.push()
   love.graphics.translate(self.body:getPosition())
@@ -163,6 +171,16 @@ function Player:draw()
   -- love.graphics.draw(self.spritesheet, self.playAnim, 30 * -0.5, 40 * -0.5)
   love.graphics.pop()
   love.graphics.pop()
+
+  -- DEBUG
+  love.graphics.line(self.debugContact.x1, self.debugContact.y1, self.debugContact.x1 + self.debugContact.tx * 20, self.debugContact.y1 + self.debugContact.ty * 20)
+  if self.debugContact.x2 ~= nil and self.debugContact.y2 ~= nil then
+    love.graphics.line(self.debugContact.x2, self.debugContact.y2, self.debugContact.x2 + self.debugContact.tx * 20, self.debugContact.y2 + self.debugContact.ty * 20)
+  end
+  love.graphics.setColor(255, 0, 0, 255)
+  love.graphics.polygon("line", self.body:getWorldPoints(self.footShape:getPoints()))
+  love.graphics.polygon("line", self.body:getWorldPoints(self.shape:getPoints()))
+  love.graphics.setColor(255, 0, 0, 255)
 end
 
 function Player:setPlanet(planet)
@@ -190,48 +208,18 @@ function Player:keyreleased(key, scancode, isrepeat)
     end
 end
 
-function Player:beginContact(a, b, coll)
-  if a == self.footFixture or b == self.footFixture then
-    self.footContacts = self.footContacts + 1
-  end
-  if a == self.actionFixture then
-    local object = b:getUserData()
-    if object and object.type == 'rocket' then
-      self.usable = object.data
-    end
-  end
-  if b == self.actionFixture then
-    local object = a:getUserData()
-    if object and object.type == 'rocket' then
-      self.usable = object.data
-    end
-  end
-end
-
-function Player:endContact(a, b, coll)
-  if a == self.footFixture or b == self.footFixture then
-    self.footContacts = self.footContacts - 1
-  end
-  if a == self.actionFixture then
-    self.usable = nil
-  end
-  if b == self.actionFixture then
-    self.usable = nil
-  end
-end
-
 function Player:moveLeft(dt)
   if client then
     client.server:send('action move_left')
   end
   if self.planet ~= nil then
     local px, py = self:_getPlanetDirection()
-    local length, angle = vector.polar(px, py)
-    local tx, ty = vector.cartesian(length, angle - math.pi * 0.5)
+    local length, angle = vector.polar2cartesian(px, py)
+    local tx, ty = vector.cartesian2polar(length, angle - math.pi * 0.5)
     local vx, vy = vector.normalize(self.body:getLinearVelocity())
     self.direction = 1
     if self.footContacts > 0 and self.jumpCooldown <= 0 then
-      self.body:setLinearVelocity(vx + tx * self.groundSpeed, vy + ty * self.groundSpeed)
+      self.body:setLinearVelocity(vx - self.debugContact.tx * self.groundSpeed, vy - self.debugContact.ty * self.groundSpeed)
       self.animation:update(dt)
     else
       self.body:applyForce(tx * self.airSpeed, ty * self.airSpeed)
@@ -247,12 +235,12 @@ function Player:moveRight(dt)
   end
   if self.planet ~= nil then
     local px, py = self:_getPlanetDirection()
-    local length, angle = vector.polar(px, py)
-    local tx, ty = vector.cartesian(length, angle + math.pi * 0.5)
+    local length, angle = vector.polar2cartesian(px, py)
+    local tx, ty = vector.cartesian2polar(length, angle + math.pi * 0.5)
     local vx, vy = vector.normalize(self.body:getLinearVelocity())
     self.direction = -1
     if self.footContacts > 0 and self.jumpCooldown <= 0 then
-      self.body:setLinearVelocity(vx + tx * self.groundSpeed, vy + ty * self.groundSpeed)
+      self.body:setLinearVelocity(vx + self.debugContact.tx * self.groundSpeed, vy + self.debugContact.ty * self.groundSpeed)
       self.animation:update(dt)
     else
       self.body:applyForce(tx * self.airSpeed, ty * self.airSpeed)
@@ -313,4 +301,48 @@ end
 
 function Player:type()
   return 'Player'
+end
+
+function Player:beginContact(a, b, coll)
+  if a == self.footFixture or b == self.footFixture then
+    self.footContacts = self.footContacts + 1
+  end
+  if a == self.actionFixture then
+    local object = b:getUserData()
+    if object and object.type == 'rocket' then
+      self.usable = object.data
+    end
+  end
+  if b == self.actionFixture then
+    local object = a:getUserData()
+    if object and object.type == 'rocket' then
+      self.usable = object.data
+    end
+  end
+end
+
+function Player:endContact(a, b, coll)
+  if a == self.footFixture or b == self.footFixture then
+    self.footContacts = self.footContacts - 1
+  end
+  if a == self.actionFixture then
+    self.usable = nil
+  end
+  if b == self.actionFixture then
+    self.usable = nil
+  end
+end
+
+function Player:preSolve(a, b, contact)
+  if a == self.footFixture or b == self.footFixture then
+     contact:setEnabled(false)
+    print(self.debugContact.x1, self.debugContact.y1)
+    print(self.debugContact.x2, self.debugContact.y2)
+    local l, a = vector.polar2cartesian(contact:getNormal())
+    self.debugContact.tx, self.debugContact.ty = vector.cartesian2polar(l, a + math.pi * 0.5)
+    self.debugContact.x1, self.debugContact.y1, self.debugContact.x2, self.debugContact.y2 = contact:getPositions()
+  end
+end
+
+function Player:postSolve(a, b, contact)
 end
